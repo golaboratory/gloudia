@@ -1,0 +1,10 @@
+github.com/goark/errs v1.3.2 h1:ifccNe1aK7Xezt4XVYwHUqalmnfhuphnEvh3FshCReQ=
+github.com/goark/errs v1.3.2/go.mod h1:ZsQucxaDFVfSB8I99j4bxkDRfNOrlKINwg72QMuRWKw=
+github.com/goark/fetch v0.3.0 h1:2m32EGOLBi99RzI5urFfmv5++CMqfenVw7NH8z/lbX8=
+github.com/goark/fetch v0.3.0/go.mod h1:sqDdPbbHeIjDVeHrgvzhHpkUr8X9pVC9DgJoVwU02x0=
+github.com/goark/koyomi v0.9.0 h1:9OLPSOgny2b9//DT+x7bn+tgMcWizpS4eY0dKTZ7PII=
+github.com/goark/koyomi v0.9.0/go.mod h1:2SCVk7EiZpW3nw2WO5Ls1Rbkg+OB5MXe0paMIi3dFsk=
+github.com/spiegel-im-spiegel/ics-golang v0.1.0 h1:B+HHGJa6MqeJq15lAe2hGo7dfnx6t4jq451Nqice4mY=
+github.com/spiegel-im-spiegel/ics-golang v0.1.0/go.mod h1:TpSbav1X/sYTlZq2aNDU8NZg9c8HcuAG2GnNVUy1zA4=
+github.com/spiegel-im-spiegel/iso8601duration v0.1.0 h1:AL8GyapnN1uGrFg/mvimc8xpOdVNU2XoaqL/WRDxe7s=
+github.com/spiegel-im-spiegel/iso8601duration v0.1.0/go.mod h1:Fe92GUFYxNfo+IRNEeJNvZHqQeH1MAz1send1zriltg=
