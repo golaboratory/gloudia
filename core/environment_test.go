@@ -6,8 +6,10 @@ import (
 )
 
 func TestGetStringVariable(t *testing.T) {
-	os.Setenv("TEST_STRING", "value")
-	defer os.Unsetenv("TEST_STRING")
+	_ = os.Setenv("TEST_STRING", "value")
+	defer func() {
+		_ = os.Unsetenv("TEST_STRING")
+	}()
 
 	tests := []struct {
 		key          string
@@ -27,8 +29,10 @@ func TestGetStringVariable(t *testing.T) {
 }
 
 func TestGetIntVariable(t *testing.T) {
-	os.Setenv("TEST_INT", "42")
-	defer os.Unsetenv("TEST_INT")
+	_ = os.Setenv("TEST_INT", "42")
+	defer func() {
+		_ = os.Unsetenv("TEST_INT")
+	}()
 
 	tests := []struct {
 		key          string
@@ -42,8 +46,7 @@ func TestGetIntVariable(t *testing.T) {
 
 	for _, tt := range tests {
 		if tt.key == "INVALID_INT" {
-			os.Setenv("INVALID_INT", "invalid")
-			defer os.Unsetenv("INVALID_INT")
+			_ = os.Setenv("INVALID_INT", "invalid")
 		}
 		result := GetIntVariable(tt.key, tt.defaultValue)
 		if result != tt.expected {
@@ -53,9 +56,10 @@ func TestGetIntVariable(t *testing.T) {
 }
 
 func TestGetBoolVariable(t *testing.T) {
-	os.Setenv("TEST_BOOL", "1")
-	defer os.Unsetenv("TEST_BOOL")
-
+	_ = os.Setenv("TEST_BOOL", "1")
+	defer func() {
+		_ = os.Unsetenv("TEST_BOOL")
+	}()
 	tests := []struct {
 		key          string
 		defaultValue bool
@@ -68,8 +72,7 @@ func TestGetBoolVariable(t *testing.T) {
 
 	for _, tt := range tests {
 		if tt.key == "INVALID_BOOL" {
-			os.Setenv("INVALID_BOOL", "invalid")
-			defer os.Unsetenv("INVALID_BOOL")
+			_ = os.Setenv("INVALID_BOOL", "invalid")
 		}
 		result := GetBoolVariable(tt.key, tt.defaultValue)
 		if result != tt.expected {
