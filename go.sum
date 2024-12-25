@@ -2,5 +2,7 @@ github.com/goark/errs v1.3.2 h1:ifccNe1aK7Xezt4XVYwHUqalmnfhuphnEvh3FshCReQ=
 github.com/goark/errs v1.3.2/go.mod h1:ZsQucxaDFVfSB8I99j4bxkDRfNOrlKINwg72QMuRWKw=
 github.com/goark/koyomi v0.9.0 h1:9OLPSOgny2b9//DT+x7bn+tgMcWizpS4eY0dKTZ7PII=
 github.com/goark/koyomi v0.9.0/go.mod h1:2SCVk7EiZpW3nw2WO5Ls1Rbkg+OB5MXe0paMIi3dFsk=
+github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
+github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S/RLdc7JQKbRpFeM1dOBd8T9ki5s+AY8=
 github.com/piglig/go-qr v0.2.6 h1:oE8v9NGXHWahoFrnS44xsq0Lq0oIRIV7gMBM8cfRGwE=
 github.com/piglig/go-qr v0.2.6/go.mod h1:funyXL4IdgMPcbICoVm1XweMtZy7Px3kyITTENkmA5w=
