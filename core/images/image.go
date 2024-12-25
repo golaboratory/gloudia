@@ -11,14 +11,19 @@ import (
 	"github.com/nfnt/resize"
 )
 
+// ResizeTarget はリサイズのターゲットを表します。
 type ResizeTarget int
 
 const (
+	// WIDTH は幅をターゲットにします。
 	WIDTH ResizeTarget = iota
+	// HEIGHT は高さをターゲットにします。
 	HEIGHT
+	// RATIO は比率をターゲットにします。
 	RATIO
 )
 
+// Image は画像のリサイズ情報を保持します。
 type Image struct {
 	FilePath     string
 	ChangeRatio  float32
@@ -27,6 +32,8 @@ type Image struct {
 	Target       ResizeTarget
 }
 
+// ResizeToData は画像をリサイズし、バイトデータとして返却します。
+// 戻り値: リサイズされた画像のバイトデータとエラー情報
 func (i Image) ResizeToData() ([]byte, error) {
 	filePath, err := i.ResizeToFile()
 	if err != nil {
@@ -49,6 +56,8 @@ func (i Image) ResizeToData() ([]byte, error) {
 
 }
 
+// ResizeToFile は画像をリサイズし、ファイルとして保存します。
+// 戻り値: リサイズされた画像のファイルパスとエラー情報
 func (i Image) ResizeToFile() (string, error) {
 
 	if i.Target == RATIO && i.ChangeRatio == 0 {

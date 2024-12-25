@@ -35,36 +35,21 @@ func CreateQrCode(ft FileType, text string, level gqr.Ecc, scale int, border int
 	if err != nil {
 		return []byte(""), err
 	}
-
-	var filePath = f.Name()
-	err = f.Close()
-	if err != nil {
-		return []byte(""), err
-	}
-
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			fmt.Printf("failed to remove temporary file: %v\n", err)
-		}
-	}(filePath)
+	defer os.Remove(f.Name())
 
 	switch ft {
 	case PNG:
-		filePath += ".png"
-		err = qr.PNG(config, filePath)
+		err = qr.PNG(config, f.Name())
 	case SVG:
-		filePath += ".svg"
-		err = qr.SVG(config, filePath, "#FFFFFF", "#000000")
+		err = qr.SVG(config, f.Name(), "#FFFFFF", "#000000")
 	default:
 		return []byte(""), fmt.Errorf("unsupported file type")
 	}
-
 	if err != nil {
 		return []byte(""), err
 	}
 
-	data, err = os.ReadFile(filePath)
+	data, err = os.ReadFile(f.Name())
 	if err != nil {
 		return []byte(""), err
 	}
