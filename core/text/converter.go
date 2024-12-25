@@ -21,29 +21,31 @@ func ConvertToEraDateWithFormat(dt time.Time, format string) (string, error) {
 	te := value.NewDate(dt)
 	n, y := te.YearEraString()
 	if len(n) == 0 {
-		return "", error(fmt.Errorf("年号が見つかりません"))
+		return "", fmt.Errorf("年号が見つかりません")
 	}
 
 	tmp := strings.ReplaceAll(y, "年", "")
 	year, err := strconv.Atoi(tmp)
 	if err != nil {
-		return "", error(fmt.Errorf("年号が見つかりません"))
+		return "", fmt.Errorf("年号が見つかりません")
 	}
 
-	var result = format
-	result = strings.ReplaceAll(result, "gggg", n)
-	result = strings.ReplaceAll(result, "yy", fmt.Sprintf("%02d", year))
-	result = strings.ReplaceAll(result, "MM", fmt.Sprintf("%02d", te.Month()))
-	result = strings.ReplaceAll(result, "dd", fmt.Sprintf("%02d", te.Day()))
-	result = strings.ReplaceAll(result, "HH", fmt.Sprintf("%02d", dt.Hour()))
-	result = strings.ReplaceAll(result, "mm", fmt.Sprintf("%02d", dt.Minute()))
-	result = strings.ReplaceAll(result, "ss", fmt.Sprintf("%02d", dt.Second()))
+	rep := strings.NewReplacer(
+		"gggg", n,
+		"yy", fmt.Sprintf("%02d", year),
+		"MM", fmt.Sprintf("%02d", te.Month()),
+		"dd", fmt.Sprintf("%02d", te.Day()),
+		"HH", fmt.Sprintf("%02d", dt.Hour()),
+		"mm", fmt.Sprintf("%02d", dt.Minute()),
+		"ss", fmt.Sprintf("%02d", dt.Second()),
+		"M", fmt.Sprintf("%d", te.Month()),
+		"d", fmt.Sprintf("%d", te.Day()),
+		"H", fmt.Sprintf("%d", dt.Hour()),
+		"m", fmt.Sprintf("%d", dt.Minute()),
+		"s", fmt.Sprintf("%d", dt.Second()),
+	)
 
-	result = strings.ReplaceAll(result, "M", fmt.Sprintf("%d", te.Month()))
-	result = strings.ReplaceAll(result, "d", fmt.Sprintf("%d", te.Day()))
-	result = strings.ReplaceAll(result, "H", fmt.Sprintf("%d", dt.Hour()))
-	result = strings.ReplaceAll(result, "m", fmt.Sprintf("%d", dt.Minute()))
-	result = strings.ReplaceAll(result, "s", fmt.Sprintf("%d", dt.Second()))
+	result := rep.Replace(format)
 
 	return result, nil
 }
