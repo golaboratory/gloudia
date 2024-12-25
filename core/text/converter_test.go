@@ -1,6 +1,7 @@
 package text
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -35,16 +36,28 @@ func TestConvertToEraDateWithFormat(t *testing.T) {
 }
 
 func TestConvertToZodiacByYear(t *testing.T) {
-	year := 2021
-	expected := "辛丑" // Example expected value for the year 2021
-
-	result, err := ConvertToZodiacByYear(year)
-	if err != nil {
-		t.Errorf("ConvertToZodiacByYear returned an error: %v", err)
+	tests := []struct {
+		year     int
+		expected string
+	}{
+		{2021, "辛丑"},
+		{2020, "庚子"},
+		{2019, "己亥"},
+		{2025, "乙巳"},
+		// 他のテストケースを追加できます
 	}
 
-	if result != expected {
-		t.Errorf("ConvertToZodiacByYear = %v; want %v", result, expected)
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Year %d", tt.year), func(t *testing.T) {
+			result, err := ConvertToZodiacByYear(tt.year)
+			if err != nil {
+				t.Errorf("ConvertToZodiacByYear returned an error: %v", err)
+			}
+
+			if result != tt.expected {
+				t.Errorf("ConvertToZodiacByYear = %v; want %v", result, tt.expected)
+			}
+		})
 	}
 }
 
@@ -63,15 +76,25 @@ func TestConvertToZodiacByDate(t *testing.T) {
 }
 
 func TestConvertToDayZodiacByDate(t *testing.T) {
-	dt := time.Date(2021, 5, 15, 0, 0, 0, 0, time.UTC)
-	expected := "癸亥" // Replace with the actual expected value
-
-	result, err := ConvertToDayZodiacByDate(dt)
-	if err != nil {
-		t.Errorf("ConvertToDayZodiacByDate returned an error: %v", err)
+	tests := []struct {
+		date     time.Time
+		expected string
+	}{
+		{time.Date(2021, 5, 15, 0, 0, 0, 0, time.UTC), "癸亥"},
+		{time.Date(2024, 12, 22, 0, 0, 0, 0, time.UTC), "庚申"},
+		// Add more test cases as needed
 	}
 
-	if result != expected {
-		t.Errorf("ConvertToDayZodiacByDate = %v; want %v", result, expected)
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Date %v", tt.date), func(t *testing.T) {
+			result, err := ConvertToDayZodiacByDate(tt.date)
+			if err != nil {
+				t.Errorf("ConvertToDayZodiacByDate returned an error: %v", err)
+			}
+
+			if result != tt.expected {
+				t.Errorf("ConvertToDayZodiacByDate = %v; want %v", result, tt.expected)
+			}
+		})
 	}
 }
