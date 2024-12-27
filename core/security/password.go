@@ -76,7 +76,7 @@ func GeneratePassword(
 
 	var result []rune
 	rnd := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	for range length {
+	for i := 0; i < length; i++ {
 		result = append(result, runes[rnd.IntN(len(runes))])
 	}
 
