@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// TestResizeToData は、ResizeToData メソッドのテストを行います。
 func TestResizeToData(t *testing.T) {
 	tests := []struct {
 		filePath string
@@ -38,6 +39,7 @@ func TestResizeToData(t *testing.T) {
 	}
 }
 
+// TestResizeToFile は、ResizeToFile メソッドのテストを行います。
 func TestResizeToFile(t *testing.T) {
 	tests := []struct {
 		filePath string

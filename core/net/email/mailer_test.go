@@ -1,9 +1,10 @@
 package email
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/smtp"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Mock for smtp.SendMail
@@ -11,11 +12,12 @@ var sendMail = smtp.SendMail
 
 func TestMailer_Send(t *testing.T) {
 	// Mock smtp.SendMail
-	smtp.SendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
-		return nil
-	}
-	defer func() { smtp.SendMail = sendMail }()
-
+	/*
+		smtp.SendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+			return nil
+		}
+		defer func() { smtp.SendMail = sendMail }()
+	*/
 	tests := []struct {
 		name    string
 		mailer  Mailer

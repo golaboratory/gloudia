@@ -9,15 +9,17 @@ import (
 	"time"
 )
 
+// Client はHTTPクライアントを表します。
 type Client struct {
-	UseBearerToken bool
-	BearerToken    string
-	Timeout        int
-	RetryCount     int
-	HttpClient     *http.Client
+	UseBearerToken bool         // ベアラートークンを使用するかどうか
+	BearerToken    string       // ベアラートークン
+	Timeout        int          // タイムアウト時間（秒）
+	RetryCount     int          // リトライ回数
+	HttpClient     *http.Client // HTTPクライアント
 }
 
-func (c *Client) Init() {
+// Init はHTTPクライアントを初期化します。
+func (c *Client) init() {
 	var retry = 1
 	if c.RetryCount > 1 {
 		retry = c.RetryCount
@@ -33,6 +35,7 @@ func (c *Client) Init() {
 	}
 }
 
+// GetString は指定されたURLから文字列を取得します。
 func (c *Client) GetString(url string) (string, error) {
 	arr, err := c.Get(url)
 	if err != nil {
@@ -41,6 +44,7 @@ func (c *Client) GetString(url string) (string, error) {
 	return string(arr), nil
 }
 
+// GetFile は指定されたURLからファイルを取得し、一時ファイルとして保存します。
 func (c *Client) GetFile(url string) (string, error) {
 	arr, err := c.Get(url)
 	f, err := os.CreateTemp("", "gloudia.core.http.get")
@@ -62,9 +66,10 @@ func (c *Client) GetFile(url string) (string, error) {
 	return f.Name(), nil
 }
 
+// Get は指定されたURLからデータを取得します。
 func (c *Client) Get(url string) ([]byte, error) {
 
-	c.Init()
+	c.init()
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -94,6 +99,7 @@ func (c *Client) Get(url string) ([]byte, error) {
 	return byteArray, nil
 }
 
+// PostJson は指定されたURLにJSONデータをPOSTし、レスポンスを文字列として返します。
 func (c *Client) PostJson(url string, json string) (string, error) {
 	arr, err := c.Post(url, []byte(json), "application/json")
 	if err != nil {
@@ -102,8 +108,9 @@ func (c *Client) PostJson(url string, json string) (string, error) {
 	return string(arr), nil
 }
 
+// Post は指定されたURLにデータをPOSTし、レスポンスをバイト配列として返します。
 func (c *Client) Post(url string, data []byte, contentType string) ([]byte, error) {
-	c.Init()
+	c.init()
 
 	var ct = "application/x-www-form-urlencoded"
 	if contentType != "" {
