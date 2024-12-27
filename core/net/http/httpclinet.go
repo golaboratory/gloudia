@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -93,6 +94,48 @@ func (c *Client) Get(url string) ([]byte, error) {
 	return byteArray, nil
 }
 
-func (c *Client) Post(url string, data string) (string, error) {
-	return "", nil
+func (c *Client) PostJson(url string, json string) (string, error) {
+	arr, err := c.Post(url, []byte(json), "application/json")
+	if err != nil {
+		return "", err
+	}
+	return string(arr), nil
+}
+
+func (c *Client) Post(url string, data []byte, contentType string) ([]byte, error) {
+	c.Init()
+
+	var ct = "application/x-www-form-urlencoded"
+	if contentType != "" {
+		ct = contentType
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return []byte(""), err
+	}
+
+	if c.UseBearerToken {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.BearerToken))
+	}
+
+	req.Header.Set("Content-Type", ct)
+
+	res, err := c.HttpClient.Do(req)
+	if err != nil {
+		return []byte(""), err
+	}
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			fmt.Printf("failed to close response body: %v\n", err)
+		}
+	}()
+
+	byteArray, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []byte(""), err
+	}
+
+	return byteArray, nil
 }
