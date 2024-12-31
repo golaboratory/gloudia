@@ -47,6 +47,9 @@ func (c *Client) GetString(url string) (string, error) {
 // GetFile は指定されたURLからファイルを取得し、一時ファイルとして保存します。
 func (c *Client) GetFile(url string) (string, error) {
 	arr, err := c.Get(url)
+	if err != nil {
+		return "", err
+	}
 	f, err := os.CreateTemp("", "gloudia.core.http.get")
 	if err != nil {
 		return "", err

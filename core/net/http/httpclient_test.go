@@ -61,7 +61,11 @@ func TestClient_GetString(t *testing.T) {
 				if r.URL.Path == "/timeout" {
 					time.Sleep(2 * time.Second)
 				} else {
-					w.Write([]byte(tt.expectedBody))
+					_, err := w.Write([]byte(tt.expectedBody))
+					if err != nil {
+						t.Errorf("Failed to write response: %v", err)
+					}
+
 				}
 			}))
 			defer server.Close()
@@ -138,7 +142,10 @@ func TestClient_GetFile(t *testing.T) {
 				if r.URL.Path == "/timeout" {
 					time.Sleep(2 * time.Second)
 				} else {
-					w.Write([]byte(tt.expectedBody))
+					_, err := w.Write([]byte(tt.expectedBody))
+					if err != nil {
+						t.Errorf("Failed to write response: %v", err)
+					}
 				}
 			}))
 			defer server.Close()
@@ -229,7 +236,10 @@ func TestClient_PostJson(t *testing.T) {
 				if r.URL.Path == "/timeout" {
 					time.Sleep(2 * time.Second)
 				} else {
-					w.Write([]byte(tt.expectedBody))
+					_, err := w.Write([]byte(tt.expectedBody))
+					if err != nil {
+						t.Errorf("Failed to write response: %v", err)
+					}
 				}
 			}))
 			defer server.Close()
@@ -314,7 +324,10 @@ func TestClient_Post(t *testing.T) {
 				if r.URL.Path == "/timeout" {
 					time.Sleep(2 * time.Second)
 				} else {
-					w.Write([]byte(tt.expectedBody))
+					_, err := w.Write([]byte(tt.expectedBody))
+					if err != nil {
+						t.Errorf("Failed to write response: %v", err)
+					}
 				}
 			}))
 			defer server.Close()

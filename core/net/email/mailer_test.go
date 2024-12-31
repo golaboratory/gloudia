@@ -1,14 +1,13 @@
 package email
 
 import (
-	"net/smtp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 // Mock for smtp.SendMail
-var sendMail = smtp.SendMail
+// var sendMail = smtp.SendMail
 
 func TestMailer_Send(t *testing.T) {
 	// Mock smtp.SendMail

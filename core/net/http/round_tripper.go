@@ -24,10 +24,12 @@ func (r GloudiaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	for c := 0; c < r.maxRetry; c++ {
 		res, err = r.t.RoundTrip(req)
 
-		var status = 0
-		if res == nil {
-			status = http.StatusRequestTimeout
-		} else {
+		if err != nil {
+			return nil, req.Context().Err()
+		}
+
+		var status = http.StatusRequestTimeout
+		if res != nil {
 			status = res.StatusCode
 		}
 
