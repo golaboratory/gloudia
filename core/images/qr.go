@@ -1,4 +1,4 @@
-﻿package images
+package images
 
 import (
 	"fmt"
@@ -25,6 +25,11 @@ const (
 // border: ボーダーサイズ
 // 戻り値: 生成されたQRコードのバイトデータとエラー情報
 func CreateQrCode(ft FileType, text string, level gqr.Ecc, scale int, border int) (data []byte, err error) {
+
+	if ft != PNG && ft != SVG {
+		return []byte(""), fmt.Errorf("unsupported file type")
+	}
+
 	qr, err := gqr.EncodeText(text, level)
 	if err != nil {
 		return []byte(""), err
@@ -35,13 +40,37 @@ func CreateQrCode(ft FileType, text string, level gqr.Ecc, scale int, border int
 	if err != nil {
 		return []byte(""), err
 	}
-	defer os.Remove(f.Name())
+
+	var orgDestPath = f.Name()
+	err = f.Close()
+	if err != nil {
+		return []byte(""), err
+	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			fmt.Printf("failed to remove file: %v\n", err)
+		}
+	}(orgDestPath)
+
+	var ext = ".png"
+	if ft == SVG {
+		ext = ".svg"
+	}
+
+	var destPath = orgDestPath + ext
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			fmt.Printf("failed to remove file: %v\n", err)
+		}
+	}(destPath)
 
 	switch ft {
 	case PNG:
-		err = qr.PNG(config, f.Name())
+		err = qr.PNG(config, destPath)
 	case SVG:
-		err = qr.SVG(config, f.Name(), "#FFFFFF", "#000000")
+		err = qr.SVG(config, destPath, "#FFFFFF", "#000000")
 	default:
 		return []byte(""), fmt.Errorf("unsupported file type")
 	}
@@ -49,7 +78,7 @@ func CreateQrCode(ft FileType, text string, level gqr.Ecc, scale int, border int
 		return []byte(""), err
 	}
 
-	data, err = os.ReadFile(f.Name())
+	data, err = os.ReadFile(destPath)
 	if err != nil {
 		return []byte(""), err
 	}
