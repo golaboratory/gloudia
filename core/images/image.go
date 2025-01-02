@@ -130,11 +130,6 @@ func (i Image) ResizeToFile() (string, error) {
 	case "jpeg", "jpg":
 		opts := &jpeg.Options{Quality: 100}
 		err = jpeg.Encode(output, resizedImg, opts)
-		/*
-			case "gif":
-				opts := &gif.Options{NumColors: 256}
-				err = gif.Encode(output, resizedImg, opts)
-		*/
 	default:
 		err = png.Encode(output, resizedImg)
 

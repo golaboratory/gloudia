@@ -1,4 +1,4 @@
-package images
+﻿package images
 
 import (
 	"fmt"
@@ -66,14 +66,12 @@ func CreateQrCode(ft FileType, text string, level gqr.Ecc, scale int, border int
 		}
 	}(destPath)
 
-	switch ft {
-	case PNG:
+	if ft == PNG {
 		err = qr.PNG(config, destPath)
-	case SVG:
+	} else {
 		err = qr.SVG(config, destPath, "#FFFFFF", "#000000")
-	default:
-		return []byte(""), fmt.Errorf("unsupported file type")
 	}
+
 	if err != nil {
 		return []byte(""), err
 	}
