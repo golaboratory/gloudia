@@ -9,7 +9,11 @@ import (
 
 func TestMailer_Send(t *testing.T) {
 	mockServer := smtpmock.New(smtpmock.ConfigurationAttr{})
-	defer mockServer.Stop()
+	defer func() {
+		if err := mockServer.Stop(); err != nil {
+			t.Log(err)
+		}
+	}()
 
 	// テスト終了後にSMTPサーバ停止
 	t.Cleanup(func() {
