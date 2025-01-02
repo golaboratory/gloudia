@@ -6,7 +6,7 @@ import (
 
 func TestEncryptString(t *testing.T) {
 	data := "Hello, World!"
-	encrypted, err := EncryptString(data)
+	encrypted, err := Encrypt(data)
 	if err != nil {
 		t.Errorf("EncryptString returned an error: %v", err)
 	}
@@ -18,12 +18,12 @@ func TestEncryptString(t *testing.T) {
 
 func TestDecryptString(t *testing.T) {
 	data := "Hello, World!"
-	encrypted, err := EncryptString(data)
+	encrypted, err := Encrypt(data)
 	if err != nil {
 		t.Errorf("EncryptString returned an error: %v", err)
 	}
 
-	decrypted, err := DecryptString(encrypted)
+	decrypted, err := Decrypt(encrypted)
 	if err != nil {
 		t.Errorf("DecryptString returned an error: %v", err)
 	}
@@ -35,12 +35,12 @@ func TestDecryptString(t *testing.T) {
 
 func TestEncryptDecryptString(t *testing.T) {
 	data := "Hello, World!"
-	encrypted, err := EncryptString(data)
+	encrypted, err := Encrypt(data)
 	if err != nil {
 		t.Errorf("EncryptString returned an error: %v", err)
 	}
 
-	decrypted, err := DecryptString(encrypted)
+	decrypted, err := Decrypt(encrypted)
 	if err != nil {
 		t.Errorf("DecryptString returned an error: %v", err)
 	}
