@@ -1,6 +1,6 @@
 package core
 
-import "golaboratory/gloudia/core/text"
+import "github.com/golaboratory/gloudia/core/text"
 
 func Clone[T1 any, T2 any](obj T1) (T2, error) {
 	var result T2
