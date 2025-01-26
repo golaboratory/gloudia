@@ -1,6 +1,6 @@
 package core
 
-import "golaboratory/gloudia/core/text"
+import "github.com/golaboratory/gloudia/core/text"
 
 // Clone は、任意の型 T1 のオブジェクトをシリアライズし、別の任意の型 T2 にデシリアライズしてクローンを作成します。
 // obj: クローンを作成する元のオブジェクト。
