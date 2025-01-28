@@ -34,7 +34,7 @@ type Image struct {
 
 // ResizeToData は画像をリサイズし、バイトデータとして返却します。
 // 戻り値: リサイズされた画像のバイトデータとエラー情報
-func (i Image) ResizeToData() ([]byte, error) {
+func (i *Image) ResizeToData() ([]byte, error) {
 	filePath, err := i.ResizeToFile()
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (i Image) ResizeToData() ([]byte, error) {
 
 // ResizeToFile は画像をリサイズし、ファイルとして保存します。
 // 戻り値: リサイズされた画像のファイルパスとエラー情報
-func (i Image) ResizeToFile() (string, error) {
+func (i *Image) ResizeToFile() (string, error) {
 
 	if i.Target == RATIO && i.ChangeRatio == 0 {
 		return "", fmt.Errorf("invalid ratio")

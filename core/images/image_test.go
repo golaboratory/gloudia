@@ -21,7 +21,7 @@ func TestResizeToData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.fileType, func(t *testing.T) {
-			img := Image{
+			img := &Image{
 				FilePath:    tt.filePath,
 				ChangeRatio: 0.5,
 				Target:      RATIO,

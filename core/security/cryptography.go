@@ -40,7 +40,7 @@ func pkcs7Pad(data []byte) []byte {
 	return append(data, trailing...)
 }
 
-// DecryptString は、与えられた暗号化文字列をAES復号化します。
+// Decrypt は、与えられた暗号化文字列をAES復号化します。
 // 暗号化された文字列を受け取り、復号化された文字列とエラーを返します。
 func (c *Cryptography) DecryptString(dataString string) (string, error) {
 	block, err := aes.NewCipher(keyText)

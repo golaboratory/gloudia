@@ -1,4 +1,4 @@
-﻿package images
+package images
 
 import (
 	"fmt"
@@ -17,14 +17,14 @@ const (
 	SVG
 )
 
-// CreateQrCode はQRコードを生成し、指定されたファイル形式で返却します。
+// Create はQRコードを生成し、指定されたファイル形式で返却します。
 // ft: ファイルの種類（PNGまたはSVG）
 // text: QRコードにエンコードするテキスト
 // level: エラー訂正レベル
 // scale: スケール
 // border: ボーダーサイズ
 // 戻り値: 生成されたQRコードのバイトデータとエラー情報
-func CreateQrCode(ft FileType, text string, level gqr.Ecc, scale int, border int) (data []byte, err error) {
+func Create(ft FileType, text string, level gqr.Ecc, scale int, border int) (data []byte, err error) {
 
 	if ft != PNG && ft != SVG {
 		return []byte(""), fmt.Errorf("unsupported file type")
