@@ -33,15 +33,15 @@ func (r GloudiaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 			status = res.StatusCode
 		}
 
-		// リトライすべきステータスか確認する
+		// リトライ対象外のステータスコードの場合は終了
 		if _, ok := retryStatus[status]; !ok {
 			return res, err
 		}
 
 		select {
-		case <-req.Context().Done(): // contextの期限が来たら終了
+		case <-req.Context().Done(): // キャンセルされた場合は終了
 			return nil, req.Context().Err()
-		case <-time.After(r.wait): // リトライ間隔を待つ
+		case <-time.After(r.wait): // 待機時間を挟んでリトライ
 		}
 	}
 
