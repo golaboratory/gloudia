@@ -1,7 +1,139 @@
 openapi: 3.0.0
 info:
-  title: Streetlights Kafka API
+  title: Gloudia Sample API
   version: 1.0.0
   description: >
     The Smartylighting Streetlights API allows you to remotely manage the city
     lights.
+paths:
+  /users:
+    get:
+      summary: "Retrieve all users"
+      operationId: getUserAll
+      responses:
+        "200":
+          description: "List of users"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+  /users/{id}:
+    get:
+      summary: "Retrieve a user by ID"
+      operationId: findUserById
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: "User details"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: "User not found"
+  /wishes:
+    get:
+      summary: "Retrieve all wishes"
+      operationId: getWishAll
+      responses:
+        "200":
+          description: "List of wishes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Wish"
+  /wishes/{id}:
+    get:
+      summary: "Retrieve a wish by ID"
+      operationId: findWishById
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: "Wish details"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wish"
+        "404":
+          description: "Wish not found"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        role_id:
+          type: integer
+        auth_key:
+          type: string
+        login_id:
+          type: string
+        password_hash:
+          type: string
+        username:
+          type: string
+        mailaddress:
+          type: string
+        authority_level:
+          type: integer
+        last_logedin_at:
+          type: string
+          format: date-time
+        view_order:
+          type: integer
+        is_deleted:
+          type: boolean
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    Wish:
+      type: object
+      properties:
+        id:
+          type: integer
+        pray_category_id:
+          type: integer
+        wish_name:
+          type: string
+        description:
+          type: string
+        is_date_designation:
+          type: boolean
+        is_manual_input:
+          type: boolean
+        view_order:
+          type: integer
+        is_deleted:
+          type: boolean
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
