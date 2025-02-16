@@ -13,14 +13,22 @@ func TestFile_ToBase64(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() {
+		err = os.Remove(tmpFile.Name())
+		t.Fatalf("failed to remove temp file: %v", err)
+	}()
 
 	// Write some data to the temporary file
 	_, err = tmpFile.WriteString("test data")
 	if err != nil {
 		t.Fatalf("failed to write to temp file: %v", err)
 	}
-	tmpFile.Close()
+	defer func(tmpFile *os.File) {
+		err := tmpFile.Close()
+		if err != nil {
+			t.Fatalf("failed to close temp file: %v", err)
+		}
+	}(tmpFile)
 
 	file := File{Path: tmpFile.Name()}
 	encoded, err := file.ToBase64()
@@ -42,8 +50,16 @@ func TestBase64_ToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatalf("failed to remove temp file: %v", err)
+		}
+	}(tmpFile.Name())
+	err = tmpFile.Close()
+	if err != nil {
+		return
+	}
 
 	err = b64.ToFile(tmpFile.Name())
 	if err != nil {
