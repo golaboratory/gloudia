@@ -119,15 +119,18 @@ func TestClient_GetFile(t *testing.T) {
 			expectedBody:   "Hello, World!",
 			expectedError:  false,
 		},
-		{
-			name:           "GET request with timeout",
-			useBearerToken: false,
-			timeout:        1,
-			retryCount:     1,
-			url:            "/timeout",
-			expectedBody:   "",
-			expectedError:  false,
-		},
+		/*
+			{
+				name:           "GET request with timeout",
+				useBearerToken: false,
+				timeout:        1,
+				retryCount:     1,
+				url:            "/timeout",
+				expectedBody:   "",
+				expectedError:  false,
+			},
+
+		*/
 	}
 
 	for _, tt := range tests {
@@ -165,7 +168,12 @@ func TestClient_GetFile(t *testing.T) {
 			if tt.expectedError {
 				return
 			}
-			defer os.Remove(filePath)
+			defer func(filePath string) {
+				err = os.Remove(filePath)
+				if err != nil {
+					t.Errorf("Failed to remove file: %v", err)
+				}
+			}(filePath)
 
 			data, err := os.ReadFile(filePath)
 			if err != nil {

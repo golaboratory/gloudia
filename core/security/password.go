@@ -3,6 +3,7 @@ package security
 import (
 	"math/rand/v2"
 	"strings"
+	"time"
 )
 
 var (
@@ -60,24 +61,47 @@ func GeneratePassword(
 	includeUpper, includeLower, includeNumber, includeSymbol bool,
 	length int) string {
 
+	var required []rune
 	var runes []rune
 	if includeUpper {
 		runes = append(runes, passwordUpperAlphabets...)
+		// 必要な大文字を１文字追加
+		rnd := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 1))
+		required = append(required, passwordUpperAlphabets[rnd.IntN(len(passwordUpperAlphabets))])
 	}
 	if includeLower {
 		runes = append(runes, passwordLowerAlphabets...)
+		rnd := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 2))
+		required = append(required, passwordLowerAlphabets[rnd.IntN(len(passwordLowerAlphabets))])
 	}
 	if includeNumber {
 		runes = append(runes, passwordNumbers...)
+		rnd := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 3))
+		required = append(required, passwordNumbers[rnd.IntN(len(passwordNumbers))])
 	}
 	if includeSymbol {
 		runes = append(runes, passwordSymbols...)
+		rnd := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 4))
+		required = append(required, passwordSymbols[rnd.IntN(len(passwordSymbols))])
 	}
 
-	var result []rune
-	rnd := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	for i := 0; i < length; i++ {
+	// 指定長より必要文字数が多い場合は、必要文字数だけで生成
+	if length < len(required) {
+		length = len(required)
+	}
+
+	// 残りの桁をランダムに埋める
+	rnd := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 5))
+	result := make([]rune, 0, length)
+	result = append(result, required...)
+	for i := len(required); i < length; i++ {
 		result = append(result, runes[rnd.IntN(len(runes))])
+	}
+
+	// シャッフル処理
+	for i := range result {
+		j := rnd.IntN(len(result))
+		result[i], result[j] = result[j], result[i]
 	}
 
 	return string(result)

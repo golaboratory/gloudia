@@ -2,6 +2,7 @@ package io
 
 import (
 	"encoding/base64"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -13,10 +14,13 @@ func TestFile_ToBase64(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer func() {
+	defer func(tmpFile *os.File) {
+		fmt.Println(tmpFile.Name())
 		err = os.Remove(tmpFile.Name())
-		t.Fatalf("failed to remove temp file: %v", err)
-	}()
+		if err != nil {
+			t.Fatalf("failed to remove temp file: %v", err)
+		}
+	}(tmpFile)
 
 	// Write some data to the temporary file
 	_, err = tmpFile.WriteString("test data")

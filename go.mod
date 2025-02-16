@@ -3,7 +3,7 @@ module github.com/golaboratory/gloudia
 go 1.23.1
 
 require (
-	github.com/goark/koyomi v0.9.0
+	github.com/goark/koyomi v0.11.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/mocktools/go-smtp-mock/v2 v2.4.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
