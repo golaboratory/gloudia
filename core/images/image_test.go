@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// TestResizeToData は、ResizeToData メソッドのテストを行います。
 func TestResizeToData(t *testing.T) {
 	tests := []struct {
 		filePath string
@@ -20,7 +21,7 @@ func TestResizeToData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.fileType, func(t *testing.T) {
-			img := Image{
+			img := &Image{
 				FilePath:    tt.filePath,
 				ChangeRatio: 0.5,
 				Target:      RATIO,
@@ -38,6 +39,7 @@ func TestResizeToData(t *testing.T) {
 	}
 }
 
+// TestResizeToFile は、ResizeToFile メソッドのテストを行います。
 func TestResizeToFile(t *testing.T) {
 	tests := []struct {
 		filePath string

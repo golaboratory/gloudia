@@ -1,20 +1,31 @@
 package email
 
 import (
-	"github.com/stretchr/testify/assert"
-	"net/smtp"
 	"testing"
+
+	smtpmock "github.com/mocktools/go-smtp-mock/v2"
+	"github.com/stretchr/testify/assert"
 )
 
-// Mock for smtp.SendMail
-var sendMail = smtp.SendMail
-
 func TestMailer_Send(t *testing.T) {
-	// Mock smtp.SendMail
-	smtp.SendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
-		return nil
+	mockServer := smtpmock.New(smtpmock.ConfigurationAttr{})
+	defer func() {
+		if err := mockServer.Stop(); err != nil {
+			t.Log(err)
+		}
+	}()
+
+	// テスト終了後にSMTPサーバ停止
+	t.Cleanup(func() {
+		if err := mockServer.Stop(); err != nil {
+			t.Log(err)
+		}
+	})
+
+	// SMTPサーバ起動
+	if err := mockServer.Start(); err != nil {
+		t.Fatal(err)
 	}
-	defer func() { smtp.SendMail = sendMail }()
 
 	tests := []struct {
 		name    string
@@ -25,8 +36,9 @@ func TestMailer_Send(t *testing.T) {
 			name: "successful send",
 			mailer: Mailer{
 				Server: Server{
-					Host: "smtp.example.com",
-					Port: 587,
+					Host:         "localhost",
+					Port:         mockServer.PortNumber(),
+					NeedSmtpAuth: false,
 				},
 				Credentials: Credentials{
 					Username: "user",
@@ -45,19 +57,22 @@ func TestMailer_Send(t *testing.T) {
 			name: "send with attachment",
 			mailer: Mailer{
 				Server: Server{
-					Host: "smtp.example.com",
-					Port: 587,
+					Host:         "localhost",
+					Port:         mockServer.PortNumber(),
+					NeedSmtpAuth: false,
 				},
 				Credentials: Credentials{
 					Username: "user",
 					Password: "pass",
 				},
-				From:        "from@example.com",
-				SenderName:  "Sender",
-				To:          []string{"to@example.com"},
-				Subject:     "Test Subject",
-				Body:        "Test Body",
-				AttachFiles: []string{"testfile.txt"},
+				From:       "from@example.com",
+				SenderName: "Sender",
+				To:         []string{"to@example.com"},
+				Subject:    "Test Subject",
+				Body:       "Test Body",
+				AttachFiles: []string{
+					"../../../testdata/core/email/test.jpg",
+					"../../../testdata/core/email/testtext.txt"},
 				UseHTMLBody: false,
 			},
 			wantErr: false,

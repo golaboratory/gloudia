@@ -2,8 +2,9 @@ package email
 
 import (
 	"fmt"
-	"github.com/jordan-wright/email"
 	"net/smtp"
+
+	"github.com/jordan-wright/email"
 )
 
 // Server は、メールサーバーの設定を保持する構造体です。
@@ -65,7 +66,10 @@ func (m *Mailer) Send() error {
 		}
 	}
 
-	var auth = smtp.PlainAuth("", m.Credentials.Username, m.Credentials.Password, m.Server.Host)
+	var auth smtp.Auth = nil
+	if m.Server.NeedSmtpAuth {
+		auth = smtp.PlainAuth("", m.Credentials.Username, m.Credentials.Password, m.Server.Host)
+	}
 	err := e.Send(fmt.Sprintf("%s:%d", m.Server.Host, m.Server.Port), auth)
 
 	if err != nil {
