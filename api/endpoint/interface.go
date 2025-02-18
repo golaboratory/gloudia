@@ -5,5 +5,5 @@ import (
 )
 
 type Endpoint interface {
-	RegisterRoutes(*huma.API, string)
+	RegisterRoutes(huma.API, string)
 }

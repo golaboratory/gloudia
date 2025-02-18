@@ -17,7 +17,9 @@ type Options struct {
 }
 
 type Binder struct {
-	RootPath string
+	APITitle   string
+	APIVersion string
+	RootPath   string
 }
 
 func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
@@ -27,15 +29,18 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 		router := chi.NewMux()
 		//router.Use(jwtauth.Verifier(tokenAuth))
 		//router.Use(logger.New())
-		api := humachi.New(router, huma.DefaultConfig("My API", "1.0.0"))
+		api := humachi.New(router, huma.DefaultConfig(b.APITitle, b.APIVersion))
 
 		for _, endpoint := range endpoints {
-			endpoint.RegisterRoutes(&api, b.RootPath)
+			endpoint.RegisterRoutes(api, b.RootPath)
 		}
 
 		hooks.OnStart(func() {
 			fmt.Printf("Starting server on port %d...\n", options.Port)
-			http.ListenAndServe(fmt.Sprintf(":%d", options.Port), router)
+			err := http.ListenAndServe(fmt.Sprintf(":%d", options.Port), router)
+			if err != nil {
+				fmt.Println("Error starting server:", err)
+			}
 		})
 	})
 
