@@ -3,9 +3,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
-	"net/http"
 )
 
 type User struct {
@@ -31,7 +32,6 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 			Path:        "/{name}",
 			Summary:     "Get a greeting",
 			Description: "Get a greeting for a person by name.",
-			Tags:        []string{"Greetings"},
 			HandlerFunc: c.GetGreeting,
 		}), c.GetGreeting)
 }

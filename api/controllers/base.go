@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golaboratory/gloudia/core/ref"
 )
@@ -16,7 +18,6 @@ type OperationParams struct {
 	Path        string
 	Summary     string
 	Description string
-	Tags        []string
 	HandlerFunc any
 }
 
@@ -27,8 +28,17 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 
 	path := c.BasePath + "/" + c.ControllerName + param.Path
 
-	param.Tags = append(param.Tags, c.ControllerName)
-	param.Tags = append(param.Tags, param.Method)
+	var tags []string
+
+	tags = append(tags, "controller_"+c.ControllerName)
+	tags = append(tags, "method_"+param.Method)
+
+	fmt.Println("--------------------")
+	fmt.Println("Controller Name: ", c.ControllerName)
+	fmt.Println("Operation ID: ", operationId)
+	fmt.Println("Method: ", param.Method)
+	fmt.Println("Path: ", path)
+	fmt.Println("Summary: ", param.Summary)
 
 	return huma.Operation{
 		OperationID: operationId,
@@ -36,6 +46,6 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 		Path:        path,
 		Summary:     param.Summary,
 		Description: param.Description,
-		Tags:        param.Tags,
+		Tags:        tags,
 	}
 }

@@ -27,10 +27,21 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 	cli := humacli.New(func(hooks humacli.Hooks, options *Options) {
 		// Create a new router & API
 		router := chi.NewMux()
+
 		//router.Use(jwtauth.Verifier(tokenAuth))
 		//router.Use(logger.New())
+
+		// Serve static files
+		fileServer := http.FileServer(http.Dir("./static/"))
+		router.Get("/app/*",
+			func(w http.ResponseWriter, r *http.Request) {
+				http.StripPrefix("/app/", fileServer).ServeHTTP(w, r)
+			},
+		)
+
 		api := humachi.New(router, huma.DefaultConfig(b.APITitle, b.APIVersion))
 
+		// Register all endpoints
 		for _, endpoint := range endpoints {
 			endpoint.RegisterRoutes(api, b.RootPath)
 		}

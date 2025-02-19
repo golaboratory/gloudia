@@ -1,6 +1,7 @@
 package ref
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -41,6 +42,7 @@ func TestGetFuncNameHappyPath(t *testing.T) {
 				t.Errorf("GetFuncName() error = %v", err)
 				return
 			}
+			fmt.Println(got)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("GetFuncName() = %v, want containing %v", got, tt.contains)
 			}
