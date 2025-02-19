@@ -98,3 +98,24 @@ func TestConvertToDayZodiacByDate(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertCamelToKebab(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"CamelCaseString", "camel-case-string"},
+		{"simpleTest", "simple-test"},
+		{"ABC", "a-b-c"},
+		{"already-kebab", "already-kebab"},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Input %s", tt.input), func(t *testing.T) {
+			got := ConvertCamelToKebab(tt.input)
+			if got != tt.expected {
+				t.Errorf("ConvertCamelToKebab(%q) = %q; want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}

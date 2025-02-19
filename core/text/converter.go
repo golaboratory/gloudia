@@ -2,11 +2,13 @@ package text
 
 import (
 	"fmt"
-	"github.com/goark/koyomi/value"
-	"github.com/goark/koyomi/zodiac"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+
+	"github.com/goark/koyomi/value"
+	"github.com/goark/koyomi/zodiac"
 )
 
 // ConvertToEraDate は、与えられた日付を和暦の日付文字列に変換します。
@@ -69,4 +71,21 @@ func ConvertToDayZodiacByDate(dt time.Time) (string, error) {
 	t := value.NewDate(dt)
 	kan, shi := zodiac.ZodiacDayNumber(t)
 	return fmt.Sprintf("%v%v", kan, shi), nil
+}
+
+// CamelToKebab はキャメルケースの文字列を受け取り、ケバブケースの文字列を返却します。
+// 例： "CamelCaseString" -> "camel-case-string"
+func ConvertCamelToKebab(s string) string {
+	var sb strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				sb.WriteRune('-')
+			}
+			sb.WriteRune(unicode.ToLower(r))
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
 }

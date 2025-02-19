@@ -7,7 +7,7 @@ import (
 
 var (
 	Endpoints = []endpoints.Endpoint{
-		&controllers.User{ControllerName: "user"},
+		&controllers.User{},
 	}
 )
 

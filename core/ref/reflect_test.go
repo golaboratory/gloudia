@@ -2,7 +2,6 @@ package ref
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -16,23 +15,19 @@ func TestGetFuncNameHappyPath(t *testing.T) {
 	tests := []struct {
 		name     string
 		fn       interface{}
-		contains string
+		expected string
 	}{
 		{
 			name:     "SimpleFunction",
 			fn:       dummyFunction,
-			contains: "dummyFunction",
+			expected: "dummyFunction",
 		},
 		{
 			name:     "MethodFunction",
 			fn:       (&testStruct{}).methodFunction,
-			contains: "methodFunction",
+			expected: "methodFunction",
 		},
-		{
-			name:     "AnonymousFunction",
-			fn:       func() {},
-			contains: "func",
-		},
+		// 匿名関数の名称は不定のため、検証から除外
 	}
 
 	for _, tt := range tests {
@@ -43,14 +38,13 @@ func TestGetFuncNameHappyPath(t *testing.T) {
 				return
 			}
 			fmt.Println(got)
-			if !strings.Contains(got, tt.contains) {
-				t.Errorf("GetFuncName() = %v, want containing %v", got, tt.contains)
+			if got != tt.expected {
+				t.Errorf("GetFuncName() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
 }
 
-/*
 func TestGetFuncNameEdgeCases(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -68,7 +62,6 @@ func TestGetFuncNameEdgeCases(t *testing.T) {
 			wantErr: true,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := GetFuncName(tt.input)
@@ -78,4 +71,49 @@ func TestGetFuncNameEdgeCases(t *testing.T) {
 		})
 	}
 }
-*/
+
+func TestGetStructName(t *testing.T) {
+	type Dummy struct{}
+	tests := []struct {
+		name     string
+		input    any
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "StructValue",
+			input:    Dummy{},
+			expected: "Dummy",
+			wantErr:  false,
+		},
+		{
+			name:     "StructPointer",
+			input:    &Dummy{},
+			expected: "Dummy",
+			wantErr:  false,
+		},
+		{
+			name:    "NonStruct",
+			input:   123,
+			wantErr: true,
+		},
+		{
+			name:    "NilInput",
+			input:   nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructName(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetStructName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got != tt.expected {
+				t.Errorf("GetStructName() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}

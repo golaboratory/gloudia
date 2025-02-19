@@ -11,7 +11,6 @@ import (
 
 type User struct {
 	controller.BaseController
-	ControllerName string
 }
 
 type GreetingOutput struct {
@@ -24,7 +23,6 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 
 	c.Api = api
 	c.BasePath = basePath
-	c.BaseController.ControllerName = c.ControllerName
 
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
@@ -33,7 +31,18 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 			Summary:     "Get a greeting",
 			Description: "Get a greeting for a person by name.",
 			HandlerFunc: c.GetGreeting,
+			Controller:  c,
 		}), c.GetGreeting)
+
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:      http.MethodGet,
+			Path:        "/{id}",
+			Summary:     "Find User Entity By Id",
+			Description: "Find User",
+			HandlerFunc: c.FindById,
+			Controller:  c,
+		}), c.FindById)
 }
 
 func (c *User) GetGreeting(_ context.Context, input *struct {
@@ -42,6 +51,10 @@ func (c *User) GetGreeting(_ context.Context, input *struct {
 	resp := &GreetingOutput{}
 	resp.Body.Message = fmt.Sprintf("Hello, %s!", input.Name)
 	return resp, nil
+}
+
+func (c *User) FindById(_ context.Context, input *controller.PathIdParam) (*GreetingOutput, error) {
+	return nil, nil
 }
 
 // todo: add FindById method
