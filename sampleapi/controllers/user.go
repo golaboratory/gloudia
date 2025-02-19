@@ -43,3 +43,10 @@ func (c *User) GetGreeting(_ context.Context, input *struct {
 	resp.Body.Message = fmt.Sprintf("Hello, %s!", input.Name)
 	return resp, nil
 }
+
+// todo: add FindById method
+// todo: add Create method
+// todo: add Update method
+// todo: add Delete method
+// todo: add GetAll method
+// todo: add GetAllWithDeleted method
