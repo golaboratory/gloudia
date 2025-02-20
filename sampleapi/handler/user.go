@@ -3,10 +3,12 @@ package handler
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
-	req "github.com/golaboratory/gloudia/sampleapi/structure/user"
+	"github.com/golaboratory/gloudia/api/middleware"
+	model "github.com/golaboratory/gloudia/sampleapi/structure/user"
 )
 
 type User struct {
@@ -118,10 +120,26 @@ func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{},
 	return nil, nil
 }
 
-func (c *User) TryLogin(_ context.Context, input *req.LoginInput) (*controller.Res[req.LoginInput], error) {
-	resp := &controller.Res[req.LoginInput]{}
-	resp.Body.Payload = *input
+func (c *User) TryLogin(_ context.Context, input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
+	resp := &controller.Res[model.AuthorizationInfo]{}
+	payload := model.AuthorizationInfo{}
 	resp.Body.SummaryMessage = "Login failed"
 	resp.Body.HasInvalidParams = true
+
+	token, err := middleware.CreateJWT(
+		middleware.JWTSecret,
+		time.Minute*8*60,
+		middleware.Claims{UserID: 1, Role: "admin"})
+
+	if err != nil {
+		return nil, err
+	}
+
+	payload.Token = token
+	payload.UserId = 1
+	payload.UserName = "admin"
+
+	resp.Body.Payload = payload
+
 	return resp, nil
 }

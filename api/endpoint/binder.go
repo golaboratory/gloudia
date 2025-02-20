@@ -52,7 +52,7 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 		}
 
 		api := humachi.New(router, config)
-		api.UseMiddleware(middleware.JWTMiddleware(api, "ssssss"))
+		api.UseMiddleware(middleware.JWTMiddleware(api, middleware.JWTSecret))
 
 		// Register all endpoints
 		for _, endpoint := range endpoints {
