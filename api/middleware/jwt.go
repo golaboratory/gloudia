@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"net/http"
 	"strings"
 	"time"
@@ -25,6 +26,11 @@ func JWTMiddleware(api huma.API, secret string) func(ctx huma.Context, next func
 		JWTSecret = secret
 	}
 
+	conf := apiConfig.ApiConfig{}
+	if err := conf.Load(); err != nil {
+		fmt.Println("Error: ", err)
+	}
+
 	return func(ctx huma.Context, next func(huma.Context)) {
 
 		// 操作に認証が必要かどうかを確認
@@ -45,8 +51,6 @@ func JWTMiddleware(api huma.API, secret string) func(ctx huma.Context, next func
 		// Authorization ヘッダを取得
 		authHeader := ctx.Header("Authorization")
 
-		fmt.Printf("JWTMiddleware: %s\n", authHeader)
-
 		if authHeader == "" {
 			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized1")
 			return
@@ -57,6 +61,22 @@ func JWTMiddleware(api huma.API, secret string) func(ctx huma.Context, next func
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+		if conf.EnableCookieToken {
+
+			// Cookieからトークンを取得
+			var authCookie string
+			if c, err := huma.ReadCookie(ctx, "Authorization"); err != nil {
+				authCookie = ""
+			} else {
+				authCookie = c.Value
+			}
+
+			if authCookie != "" {
+				tokenString = authCookie
+			}
+
+		}
 
 		// JWTトークンの解析および検証
 		token, err := gjwt.Parse(tokenString, func(token *gjwt.Token) (interface{}, error) {

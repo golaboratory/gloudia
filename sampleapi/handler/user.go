@@ -15,10 +15,10 @@ type User struct {
 	controller.BaseController
 }
 
-func (c *User) RegisterRoutes(api huma.API, basePath string) {
+func (c *User) RegisterRoutes(api huma.API) {
 
 	c.Api = api
-	c.BasePath = basePath
+	c.LoadConfig()
 
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
@@ -120,14 +120,15 @@ func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{},
 	return nil, nil
 }
 
-func (c *User) TryLogin(_ context.Context, input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
+func (c *User) TryLogin(ctx context.Context, input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
+
 	resp := &controller.Res[model.AuthorizationInfo]{}
 	payload := model.AuthorizationInfo{}
 	resp.Body.SummaryMessage = "Login failed"
 	resp.Body.HasInvalidParams = true
 
 	token, err := middleware.CreateJWT(
-		middleware.JWTSecret,
+		c.ApiConfig.JWTSecret,
 		time.Minute*8*60,
 		middleware.Claims{UserID: 1, Role: "admin"})
 
@@ -140,6 +141,12 @@ func (c *User) TryLogin(_ context.Context, input *model.LoginInput) (*controller
 	payload.UserName = "admin"
 
 	resp.Body.Payload = payload
+	resp.SetCookie = http.Cookie{
+		Name:     "Authorization",
+		Value:    token,
+		HttpOnly: true,
+		Secure:   c.ApiConfig.EnableSSL,
+	}
 
 	return resp, nil
 }

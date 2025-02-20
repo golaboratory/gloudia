@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -13,9 +14,8 @@ import (
 // BaseController は基本的なコントローラを表現する構造体です。
 // APIとの連携や、コントローラ名、基本パスを管理します。
 type BaseController struct {
-	ControllerName string
-	Api            huma.API
-	BasePath       string
+	Api       huma.API
+	ApiConfig apiConfig.ApiConfig
 }
 
 // OperationParams は、API操作作成時に使用するパラメータ情報を保持する構造体です。
@@ -30,11 +30,22 @@ type OperationParams struct {
 	Controller     any
 }
 
+func (c *BaseController) LoadConfig() {
+	c.ApiConfig = apiConfig.ApiConfig{}
+	if err := c.ApiConfig.Load(); err != nil {
+		fmt.Println("Error: ", err)
+	}
+}
+
 // CreateOperation は、指定されたパラメータからAPI操作（Operation）を生成します。
 // 各操作に一意のOperationIDを割り当て、タグ情報を設定します。
 func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 
 	var tags []string
+	conf := apiConfig.ApiConfig{}
+	if err := conf.Load(); err != nil {
+		fmt.Println("Error: ", err)
+	}
 
 	controllerName, err := ref.GetStructName(param.Controller)
 	if err != nil {
@@ -50,7 +61,7 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 	operationId, _ := ref.GetFuncName(param.HandlerFunc)
 	operationId = controllerName + "-" + text.ConvertCamelToKebab(operationId)
 
-	path := c.BasePath + "/" + controllerName + param.Path
+	path := c.ApiConfig.RootPath + "/" + controllerName + param.Path
 
 	if strings.Contains(path, "//") {
 		tags = append(tags, "_has-error")
@@ -60,7 +71,7 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 	// tags = append(tags, "method_"+param.Method)
 
 	security := []map[string][]string{}
-	if !param.AllowAnonymous {
+	if !param.AllowAnonymous && conf.EnableJWT {
 		security = []map[string][]string{
 			{middleware.JWTMiddlewareName: {}},
 		}

@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"fmt"
+	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -14,10 +15,6 @@ import (
 	"github.com/golaboratory/gloudia/api/middleware"
 )
 
-type Options struct {
-	Port int `help:"Port to listen on" short:"p" default:"8888"`
-}
-
 type Binder struct {
 	APITitle   string
 	APIVersion string
@@ -26,42 +23,56 @@ type Binder struct {
 
 func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 
-	cli := humacli.New(func(hooks humacli.Hooks, options *Options) {
+	conf := apiConfig.ApiConfig{}
+	if err := conf.Load(); err != nil {
+		return nil, err
+	}
+
+	cli := humacli.New(func(hooks humacli.Hooks, _ *struct{}) {
 		// Create a new router & API
 		router := chi.NewMux()
 
-		//router.Use(jwtauth.Verifier(tokenAuth))
-		//router.Use(logger.New())
+		if conf.EnableStatic {
+			// Serve static files
+			fileServer := http.FileServer(http.Dir("./static/"))
 
-		// Serve static files
-		fileServer := http.FileServer(http.Dir("./static/"))
-		router.Get("/app/*",
-			func(w http.ResponseWriter, r *http.Request) {
-				http.StripPrefix("/app/", fileServer).ServeHTTP(w, r)
-			},
-		)
+			router.Get("/app/*",
+				func(w http.ResponseWriter, r *http.Request) {
+					http.StripPrefix("/app/", fileServer).ServeHTTP(w, r)
+				},
+			)
+		}
 
 		config := huma.DefaultConfig(b.APITitle, b.APIVersion)
 
-		config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
-			middleware.JWTMiddlewareName: {
-				Type:         "http",
-				Scheme:       "bearer",
-				BearerFormat: "JWT",
-			},
+		if conf.EnableJWT {
+			config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
+				middleware.JWTMiddlewareName: {
+					Type:         "http",
+					Scheme:       "bearer",
+					BearerFormat: "JWT",
+				},
+			}
 		}
 
 		api := humachi.New(router, config)
-		api.UseMiddleware(middleware.JWTMiddleware(api, middleware.JWTSecret))
 
+		if conf.EnableJWT {
+			// Add JWT middleware
+			api.UseMiddleware(
+				middleware.JWTMiddleware(
+					api,
+					conf.JWTSecret))
+		}
+		
 		// Register all endpoints
 		for _, endpoint := range endpoints {
-			endpoint.RegisterRoutes(api, b.RootPath)
+			endpoint.RegisterRoutes(api)
 		}
 
 		hooks.OnStart(func() {
-			fmt.Printf("Starting server on port %d...\n", options.Port)
-			err := http.ListenAndServe(fmt.Sprintf(":%d", options.Port), router)
+			fmt.Printf("Starting server on port %d...\n", conf.Port)
+			err := http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), router)
 			if err != nil {
 				fmt.Println("Error starting server:", err)
 			}

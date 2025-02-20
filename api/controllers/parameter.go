@@ -1,5 +1,7 @@
 package controller
 
+import "net/http"
+
 // PathIdParam は、エンティティの識別子 (ID) をパスパラメータとして受け取るための構造体です。
 // フィールド:
 //   - Id: エンティティのID。例として 1 が指定されます。
@@ -8,7 +10,8 @@ type PathIdParam struct {
 }
 
 type Res[T any] struct {
-	Body struct {
+	SetCookie http.Cookie `header:"Set-Cookie"`
+	Body      struct {
 		SummaryMessage   string `json:"summaryMessage" example:"Invalid parameters" doc:"Summary message"`
 		HasInvalidParams bool   `json:"hasInvalidParams" example:"false" doc:"Invalid parameters flag"`
 		InvalidParamList []struct {
