@@ -20,12 +20,13 @@ type BaseController struct {
 // OperationParams は、API操作作成時に使用するパラメータ情報を保持する構造体です。
 // メソッド、パス、概要、説明、ハンドラ関数などの情報が含まれます。
 type OperationParams struct {
-	Method      string
-	Path        string
-	Summary     string
-	Description string
-	HandlerFunc any
-	Controller  any
+	Method         string
+	Path           string
+	Summary        string
+	Description    string
+	AllowAnonymous bool
+	HandlerFunc    any
+	Controller     any
 }
 
 // CreateOperation は、指定されたパラメータからAPI操作（Operation）を生成します。
@@ -39,6 +40,8 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 		fmt.Println("Error: ", err)
 		controllerName = "unknown"
 		tags = append(tags, "_has-error")
+	} else {
+		tags = append(tags, controllerName)
 	}
 
 	controllerName = strings.ToLower(controllerName)
@@ -52,8 +55,8 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 		tags = append(tags, "_has-error")
 	}
 
-	tags = append(tags, "controller_"+controllerName)
-	tags = append(tags, "method_"+param.Method)
+	// tags = append(tags, "controller_"+controllerName)
+	// tags = append(tags, "method_"+param.Method)
 
 	fmt.Println("--------------------")
 	fmt.Println("Controller Name: ", controllerName)

@@ -2,12 +2,12 @@ package main
 
 import (
 	endpoints "github.com/golaboratory/gloudia/api/endpoint"
-	"github.com/golaboratory/gloudia/sampleapi/controllers"
+	"github.com/golaboratory/gloudia/sampleapi/handler"
 )
 
 var (
 	Endpoints = []endpoints.Endpoint{
-		&controllers.User{},
+		&handler.User{},
 	}
 )
 

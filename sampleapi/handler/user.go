@@ -1,4 +1,4 @@
-package controllers
+package handler
 
 import (
 	"context"
@@ -6,16 +6,11 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
+	req "github.com/golaboratory/gloudia/sampleapi/structure/user"
 )
 
 type User struct {
 	controller.BaseController
-}
-
-type GreetingOutput struct {
-	Body struct {
-		Message string `json:"message" example:"Hello, world!" doc:"Greeting message"`
-	}
 }
 
 func (c *User) RegisterRoutes(api huma.API, basePath string) {
@@ -26,7 +21,7 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
 			Method:      http.MethodGet,
-			Path:        "{id}",
+			Path:        "/{id}",
 			Summary:     "Find User Entity By Id",
 			Description: "ユーザマスタのIDを条件に、エンティティ情報を取得する",
 			HandlerFunc: c.FindById,
@@ -48,7 +43,7 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
 			Method:      http.MethodPut,
-			Path:        "{id}",
+			Path:        "/{id}",
 			Summary:     "Update User Entity By Id",
 			Description: "ユーザマスタのIDを条件に、エンティティ情報を更新する",
 			HandlerFunc: c.Update,
@@ -59,7 +54,7 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
 			Method:      http.MethodDelete,
-			Path:        "{id}",
+			Path:        "/{id}",
 			Summary:     "Delete User Entity By Id",
 			Description: "ユーザマスタのIDを条件に、エンティティ情報を削除する",
 			HandlerFunc: c.Delete,
@@ -89,6 +84,18 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 		}),
 		c.GetAllWithDeleted)
 
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:         http.MethodPost,
+			Path:           "/login",
+			AllowAnonymous: true,
+			Summary:        "Try Login",
+			Description:    "ログインを試行する",
+			HandlerFunc:    c.TryLogin,
+			Controller:     c,
+		}),
+		c.TryLogin)
+
 }
 
 func (c *User) FindById(_ context.Context, input *controller.PathIdParam) (*struct{}, error) {
@@ -109,4 +116,12 @@ func (c *User) GetAll(_ context.Context, input *struct{}) (*struct{}, error) {
 }
 func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{}, error) {
 	return nil, nil
+}
+
+func (c *User) TryLogin(_ context.Context, input *req.LoginInput) (*controller.Res[req.LoginInput], error) {
+	resp := &controller.Res[req.LoginInput]{}
+	resp.Body.Payload = *input
+	resp.Body.SummaryMessage = "Login failed"
+	resp.Body.HasInvalidParams = true
+	return resp, nil
 }
