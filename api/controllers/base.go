@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/golaboratory/gloudia/api/middleware"
 	"github.com/golaboratory/gloudia/core/ref"
 	"github.com/golaboratory/gloudia/core/text"
 )
@@ -58,12 +59,20 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 	// tags = append(tags, "controller_"+controllerName)
 	// tags = append(tags, "method_"+param.Method)
 
+	security := []map[string][]string{}
+	if !param.AllowAnonymous {
+		security = []map[string][]string{
+			{middleware.JWTMiddlewareName: {}},
+		}
+	}
+
 	fmt.Println("--------------------")
 	fmt.Println("Controller Name: ", controllerName)
 	fmt.Println("Operation ID: ", operationId)
 	fmt.Println("Method: ", param.Method)
 	fmt.Println("Path: ", path)
 	fmt.Println("Summary: ", param.Summary)
+	fmt.Println("AllowAnonymous: ", param.AllowAnonymous)
 	fmt.Println("")
 
 	return huma.Operation{
@@ -73,5 +82,6 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 		Summary:     param.Summary,
 		Description: param.Description,
 		Tags:        tags,
+		Security:    security,
 	}
 }
