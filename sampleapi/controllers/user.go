@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -27,39 +26,87 @@ func (c *User) RegisterRoutes(api huma.API, basePath string) {
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
 			Method:      http.MethodGet,
-			Path:        "/{name}",
-			Summary:     "Get a greeting",
-			Description: "Get a greeting for a person by name.",
-			HandlerFunc: c.GetGreeting,
+			Path:        "{id}",
+			Summary:     "Find User Entity By Id",
+			Description: "ユーザマスタのIDを条件に、エンティティ情報を取得する",
+			HandlerFunc: c.FindById,
 			Controller:  c,
-		}), c.GetGreeting)
+		}),
+		c.FindById)
+
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:      http.MethodPost,
+			Path:        "",
+			Summary:     "Create User Entity",
+			Description: "ユーザマスタのエンティティ情報を登録する",
+			HandlerFunc: c.Create,
+			Controller:  c,
+		}),
+		c.Create)
+
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:      http.MethodPut,
+			Path:        "{id}",
+			Summary:     "Update User Entity By Id",
+			Description: "ユーザマスタのIDを条件に、エンティティ情報を更新する",
+			HandlerFunc: c.Update,
+			Controller:  c,
+		}),
+		c.Update)
+
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:      http.MethodDelete,
+			Path:        "{id}",
+			Summary:     "Delete User Entity By Id",
+			Description: "ユーザマスタのIDを条件に、エンティティ情報を削除する",
+			HandlerFunc: c.Delete,
+			Controller:  c,
+		}),
+		c.Delete)
 
 	huma.Register(api,
 		c.CreateOperation(controller.OperationParams{
 			Method:      http.MethodGet,
-			Path:        "/{id}",
-			Summary:     "Find User Entity By Id",
-			Description: "Find User",
-			HandlerFunc: c.FindById,
+			Path:        "",
+			Summary:     "Find User Entity List",
+			Description: "ユーザマスタのエンティティ情報を取得する",
+			HandlerFunc: c.GetAll,
 			Controller:  c,
-		}), c.FindById)
+		}),
+		c.GetAll)
+
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:      http.MethodGet,
+			Path:        "",
+			Summary:     "Find User Entity List With Delete Flag",
+			Description: "ユーザマスタのエンティティ情報を取得する（削除フラグ有り）",
+			HandlerFunc: c.GetAllWithDeleted,
+			Controller:  c,
+		}),
+		c.GetAllWithDeleted)
+
 }
 
-func (c *User) GetGreeting(_ context.Context, input *struct {
-	Name string `path:"name" maxLength:"30" example:"world" doc:"Name to greet"`
-}) (*GreetingOutput, error) {
-	resp := &GreetingOutput{}
-	resp.Body.Message = fmt.Sprintf("Hello, %s!", input.Name)
-	return resp, nil
-}
-
-func (c *User) FindById(_ context.Context, input *controller.PathIdParam) (*GreetingOutput, error) {
+func (c *User) FindById(_ context.Context, input *controller.PathIdParam) (*struct{}, error) {
 	return nil, nil
 }
 
-// todo: add FindById method
-// todo: add Create method
-// todo: add Update method
-// todo: add Delete method
-// todo: add GetAll method
-// todo: add GetAllWithDeleted method
+func (c *User) Create(_ context.Context, input *struct{}) (*struct{}, error) {
+	return nil, nil
+}
+func (c *User) Update(_ context.Context, input *controller.PathIdParam) (*struct{}, error) {
+	return nil, nil
+}
+func (c *User) Delete(_ context.Context, input *controller.PathIdParam) (*struct{}, error) {
+	return nil, nil
+}
+func (c *User) GetAll(_ context.Context, input *struct{}) (*struct{}, error) {
+	return nil, nil
+}
+func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{}, error) {
+	return nil, nil
+}

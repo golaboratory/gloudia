@@ -10,6 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	_ "github.com/danielgtaylor/huma/v2/formats/cbor"
+
+	"github.com/golaboratory/gloudia/api/middleware"
 )
 
 type Options struct {
@@ -39,7 +41,17 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 			},
 		)
 
-		api := humachi.New(router, huma.DefaultConfig(b.APITitle, b.APIVersion))
+		config := huma.DefaultConfig(b.APITitle, b.APIVersion)
+
+		config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
+			middleware.JWTMiddlewareName: {
+				Type:         "http",
+				Scheme:       "bearer",
+				BearerFormat: "JWT",
+			},
+		}
+
+		api := humachi.New(router, config)
 
 		// Register all endpoints
 		for _, endpoint := range endpoints {
