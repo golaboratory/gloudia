@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
-	"github.com/golaboratory/gloudia/api/middleware"
+	"github.com/golaboratory/gloudia/sampleapi/service"
 	model "github.com/golaboratory/gloudia/sampleapi/structure/user"
 )
 
@@ -121,27 +121,13 @@ func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{},
 
 func (c *User) TryLogin(ctx context.Context, input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
 
-	resp := &controller.Res[model.AuthorizationInfo]{}
-	payload := model.AuthorizationInfo{}
-	resp.Body.SummaryMessage = "Login failed"
-	resp.Body.HasInvalidParams = true
+	model := service.User{c.BaseService.Context: ctx}
 
-	token, err := middleware.CreateJWT(middleware.Claims{UserID: "1", Role: "admin"})
-	if err != nil {
-		return nil, err
+	if ok := model.ValidateForLogin(input); !ok {
+		return nil, nil
 	}
 
-	payload.Token = token
-	payload.ID = 1
-	payload.Username = "admin"
+	resp, err := model.TryLogin(input)
+	return resp, err
 
-	resp.Body.Payload = payload
-	resp.SetCookie = http.Cookie{
-		Name:     "Authorization",
-		Value:    token,
-		HttpOnly: true,
-		Secure:   c.ApiConfig.EnableSSL,
-	}
-
-	return resp, nil
 }
