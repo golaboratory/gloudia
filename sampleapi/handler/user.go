@@ -126,14 +126,14 @@ func (c *User) TryLogin(ctx context.Context, input *model.LoginInput) (*controll
 	resp.Body.SummaryMessage = "Login failed"
 	resp.Body.HasInvalidParams = true
 
-	token, err := middleware.CreateJWT(middleware.Claims{UserID: 1, Role: "admin"})
+	token, err := middleware.CreateJWT(middleware.Claims{UserID: "1", Role: "admin"})
 	if err != nil {
 		return nil, err
 	}
 
 	payload.Token = token
-	payload.UserId = 1
-	payload.UserName = "admin"
+	payload.ID = 1
+	payload.Username = "admin"
 
 	resp.Body.Payload = payload
 	resp.SetCookie = http.Cookie{

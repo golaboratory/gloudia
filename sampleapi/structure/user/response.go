@@ -1,7 +1,10 @@
 package user
 
+import (
+	"github.com/golaboratory/gloudia/sampleapi/repository/db"
+)
+
 type AuthorizationInfo struct {
-	Token    string `json:"token" doc:"トークン"`
-	UserId   int64  `json:"userId" doc:"ユーザID"`
-	UserName string `json:"userName" doc:"ユーザ名"`
+	Token string `json:"token" doc:"トークン"`
+	db.MUser
 }
