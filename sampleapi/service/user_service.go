@@ -27,6 +27,10 @@ func (u *User) ValidateForLogin(input *model.LoginInput) (bool, string) {
 		u.AddInvalid("password", "Input is required")
 	}
 
+	if !u.IsValid() {
+		return false, ""
+	}
+
 	return u.IsValid(), ""
 }
 

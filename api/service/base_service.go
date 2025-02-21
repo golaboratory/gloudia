@@ -25,7 +25,6 @@ type BaseService struct {
 	Context     *context.Context
 	InvalidList InvalidParamList
 	APIConfig   config.ApiConfig
-	DBConfig    config.DBConfig
 }
 
 func (b *BaseService) LoadConfig() {
@@ -34,10 +33,6 @@ func (b *BaseService) LoadConfig() {
 		fmt.Println("Error: ", err)
 	}
 
-	b.DBConfig = config.DBConfig{}
-	if err := b.DBConfig.Load(); err != nil {
-		fmt.Println("Error: ", err)
-	}
 }
 
 // AddInvalid は、バリデーションエラーのリストに新しいエラー情報を追加します。
