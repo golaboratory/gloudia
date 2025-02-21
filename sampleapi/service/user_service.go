@@ -27,7 +27,7 @@ func (u *User) ValidateForLogin(input *model.LoginInput) bool {
 		return false
 	}
 
-	return true
+	return u.IsValid()
 }
 
 func (u *User) TryLogin(input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {

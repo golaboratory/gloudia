@@ -2,8 +2,9 @@ package controller
 
 import (
 	"fmt"
-	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"strings"
+
+	apiConfig "github.com/golaboratory/gloudia/api/config"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golaboratory/gloudia/api/middleware"

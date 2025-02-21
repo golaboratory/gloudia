@@ -121,7 +121,8 @@ func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{},
 
 func (c *User) TryLogin(ctx context.Context, input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
 
-	model := service.User{c.BaseService.Context: ctx}
+	model := service.User{}
+	model.Context = &ctx
 
 	if ok := model.ValidateForLogin(input); !ok {
 		return nil, nil
