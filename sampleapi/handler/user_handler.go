@@ -7,7 +7,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
 	"github.com/golaboratory/gloudia/sampleapi/service"
-	model "github.com/golaboratory/gloudia/sampleapi/structure/user"
+	structure "github.com/golaboratory/gloudia/sampleapi/structure/user"
 )
 
 type User struct {
@@ -119,16 +119,26 @@ func (c *User) GetAllWithDeleted(_ context.Context, input *struct{}) (*struct{},
 	return nil, nil
 }
 
-func (c *User) TryLogin(ctx context.Context, input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
+func (c *User) TryLogin(ctx context.Context, input *structure.LoginInput) (*controller.Res[structure.AuthorizationInfo], error) {
 
 	model := service.User{}
 	model.Context = &ctx
 
-	if ok := model.ValidateForLogin(input); !ok {
-		return nil, nil
+	if ok, message := model.ValidateForLogin(input); !ok {
+		return controller.ResponseInvalid[structure.AuthorizationInfo](
+			message,
+			model.InvalidList,
+		)
 	}
 
-	resp, err := model.TryLogin(input)
-	return resp, err
+	resp, cookie, err := model.TryLogin(input)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := controller.ResponseOk[structure.AuthorizationInfo](*resp, "")
+	res.SetCookie = cookie
+
+	return res, err
 
 }

@@ -3,7 +3,6 @@ package service
 import (
 	"net/http"
 
-	controller "github.com/golaboratory/gloudia/api/controllers"
 	"github.com/golaboratory/gloudia/api/middleware"
 	"github.com/golaboratory/gloudia/api/service"
 	model "github.com/golaboratory/gloudia/sampleapi/structure/user"
@@ -13,46 +12,44 @@ type User struct {
 	service.BaseService
 }
 
-func (u *User) ValidateForLogin(input *model.LoginInput) bool {
+func (u *User) ValidateForLogin(input *model.LoginInput) (bool, string) {
 	if input == nil {
-		u.AddInvalid("input", "Input is required")
-		return false
+		u.AddInvalid("userId", "Input is required")
+		u.AddInvalid("password", "Input is required")
+		return false, ""
 	}
 
 	if input.Body.UserId == "" {
-		return false
+		u.AddInvalid("userId", "Input is required")
 	}
 
 	if input.Body.Password == "" {
-		return false
+		u.AddInvalid("password", "Input is required")
 	}
 
-	return u.IsValid()
+	return u.IsValid(), ""
 }
 
-func (u *User) TryLogin(input *model.LoginInput) (*controller.Res[model.AuthorizationInfo], error) {
+func (u *User) TryLogin(input *model.LoginInput) (*model.AuthorizationInfo, http.Cookie, error) {
 
-	resp := &controller.Res[model.AuthorizationInfo]{}
+	u.LoadConfig()
+
 	payload := model.AuthorizationInfo{}
-	resp.Body.SummaryMessage = "Login failed"
-	resp.Body.HasInvalidParams = true
 
 	token, err := middleware.CreateJWT(middleware.Claims{UserID: "1", Role: "admin"})
 	if err != nil {
-		return nil, err
+		return nil, http.Cookie{}, err
 	}
 
 	payload.Token = token
 	payload.ID = 1
 	payload.Username = "admin"
 
-	resp.Body.Payload = payload
-	resp.SetCookie = http.Cookie{
-		Name:     "Authorization",
-		Value:    token,
-		HttpOnly: true,
-		//Secure:   c.ApiConfig.EnableSSL,
-	}
-
-	return resp, nil
+	return &payload,
+		http.Cookie{
+			Name:     "Authorization",
+			Value:    token,
+			HttpOnly: true,
+			Secure:   u.APIConfig.EnableSSL,
+		}, nil
 }

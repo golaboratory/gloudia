@@ -13,12 +13,14 @@ type PathIdParam struct {
 	Id int64 `path:"id" example:"1" doc:"ID of the entity"`
 }
 
+type ResponseBody[T any] struct {
+	SummaryMessage           string `json:"summaryMessage" example:"Invalid parameters" doc:"Summary message"`
+	HasInvalidParams         bool   `json:"hasInvalidParams" example:"false" doc:"Invalid parameters flag"`
+	service.InvalidParamList `json:"invalidParamList" doc:"List of invalid parameters"`
+	Payload                  T `json:"payload" doc:"Response payload"`
+}
+
 type Res[T any] struct {
-	SetCookie http.Cookie `header:"Set-Cookie"`
-	Body      struct {
-		SummaryMessage           string `json:"summaryMessage" example:"Invalid parameters" doc:"Summary message"`
-		HasInvalidParams         bool   `json:"hasInvalidParams" example:"false" doc:"Invalid parameters flag"`
-		service.InvalidParamList `json:"invalidParamList" doc:"List of invalid parameters"`
-		Payload                  T `json:"payload" doc:"Response payload"`
-	}
+	SetCookie http.Cookie     `header:"Set-Cookie"`
+	Body      ResponseBody[T] `json:"body" doc:"Response body"`
 }

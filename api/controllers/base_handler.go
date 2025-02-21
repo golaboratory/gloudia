@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	apiConfig "github.com/golaboratory/gloudia/api/config"
+	"github.com/golaboratory/gloudia/api/service"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golaboratory/gloudia/api/middleware"
@@ -96,4 +97,31 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 		Tags:        tags,
 		Security:    security,
 	}
+}
+
+func ResponseInvalid[T any](message string, invalidList service.InvalidParamList) (*Res[T], error) {
+
+	result := &Res[T]{
+		Body: ResponseBody[T]{
+			SummaryMessage:   message,
+			HasInvalidParams: true,
+			InvalidParamList: invalidList,
+		},
+	}
+
+	return result, nil
+}
+
+func ResponseOk[T any](payload T, message string) (*Res[T], error) {
+
+	result := &Res[T]{
+		Body: ResponseBody[T]{
+			SummaryMessage:   message,
+			HasInvalidParams: false,
+			InvalidParamList: service.InvalidParamList{},
+			Payload:          payload,
+		},
+	}
+
+	return result, nil
 }
