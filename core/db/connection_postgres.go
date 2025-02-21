@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func NewConnection() (*pgx.Conn, error) {
+func NewPostgresConnection() (*pgx.Conn, error) {
 	config := DBConfig{}
 	if err := config.Load(); err != nil {
 		return nil, err
@@ -21,7 +21,9 @@ func NewConnection() (*pgx.Conn, error) {
 		config.Port,
 		config.Database)
 
-	conn, err := pgx.Connect(context.Background(), databaseUrl)
+	conn, err := pgx.Connect(
+		context.Background(),
+		databaseUrl)
 	if err != nil {
 		return nil, err
 	}

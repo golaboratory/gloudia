@@ -124,9 +124,13 @@ func (c *User) TryLogin(ctx context.Context, input *structure.LoginInput) (*cont
 	model := service.User{}
 	model.Context = &ctx
 
-	if ok, message := model.ValidateForLogin(input); !ok {
+	ok, msg, err := model.ValidateForLogin(input)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
 		return controller.ResponseInvalid[structure.AuthorizationInfo](
-			message,
+			msg,
 			model.InvalidList,
 		)
 	}
