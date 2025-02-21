@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
@@ -127,11 +126,7 @@ func (c *User) TryLogin(ctx context.Context, input *model.LoginInput) (*controll
 	resp.Body.SummaryMessage = "Login failed"
 	resp.Body.HasInvalidParams = true
 
-	token, err := middleware.CreateJWT(
-		c.ApiConfig.JWTSecret,
-		time.Minute*8*60,
-		middleware.Claims{UserID: 1, Role: "admin"})
-
+	token, err := middleware.CreateJWT(middleware.Claims{UserID: 1, Role: "admin"})
 	if err != nil {
 		return nil, err
 	}

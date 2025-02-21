@@ -2,8 +2,9 @@ package endpoints
 
 import (
 	"fmt"
-	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"net/http"
+
+	apiConfig "github.com/golaboratory/gloudia/api/config"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -16,9 +17,10 @@ import (
 )
 
 type Binder struct {
-	APITitle   string
-	APIVersion string
-	RootPath   string
+	APITitle    string
+	APIVersion  string
+	RootPath    string
+	JWTValidate func(middleware.Claims) (bool, error)
 }
 
 func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
@@ -59,12 +61,9 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 
 		if conf.EnableJWT {
 			// Add JWT middleware
-			api.UseMiddleware(
-				middleware.JWTMiddleware(
-					api,
-					conf.JWTSecret))
+			api.UseMiddleware(middleware.JWTMiddleware(api, b.JWTValidate))
 		}
-		
+
 		// Register all endpoints
 		for _, endpoint := range endpoints {
 			endpoint.RegisterRoutes(api)

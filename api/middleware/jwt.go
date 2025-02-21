@@ -2,38 +2,41 @@ package middleware
 
 import (
 	"fmt"
-	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"net/http"
 	"strings"
 	"time"
+
+	apiConfig "github.com/golaboratory/gloudia/api/config"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golaboratory/gloudia/core/text"
 	gjwt "github.com/golang-jwt/jwt"
 )
 
-// JWTMiddlewareName はJWT認証ミドルウェアの名前を示します。
+// JWTMiddlewareName はJWT認証ミドルウェアの名前を表します。
 var JWTMiddlewareName = "JWTAuthMiddleware"
 
-// JWTSecret はJWTの署名検証用シークレットを保持します。
+// JWTSecret はJWTの署名検証に使用するシークレットキーです。
 var JWTSecret = "BHqQTg99LmSk$Q,_xe*LM+!P*5PKnR~n"
 
-// JWTMiddleware はJWT認証ミドルウェアです。
-// APIリクエストに対してAuthorizationヘッダ内のJWTトークンを検証し、認証情報をコンテキストに設定します。
-func JWTMiddleware(api huma.API, secret string) func(ctx huma.Context, next func(huma.Context)) {
-
-	if secret != "" {
-		JWTSecret = secret
-	}
+// JWTMiddleware はAPIリクエストに含まれるJWTトークンの検証を行い、
+// 認証情報をコンテキストにセットするミドルウェアを返します。
+// validate関数は認証情報(Claims)の妥当性を検証するために利用されます。
+// また、環境設定に基づきCookieからトークンを取得する処理も行います。
+func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx huma.Context, next func(huma.Context)) {
 
 	conf := apiConfig.ApiConfig{}
 	if err := conf.Load(); err != nil {
 		fmt.Println("Error: ", err)
 	}
 
+	if conf.JWTSecret != "" {
+		JWTSecret = conf.JWTSecret
+	}
+
 	return func(ctx huma.Context, next func(huma.Context)) {
 
-		// 操作に認証が必要かどうかを確認
+		// リクエスト対象の操作が認証を必要とするか確認
 		isAuthorizationRequired := false
 		for _, opScheme := range ctx.Operation().Security {
 			if _, ok := opScheme[JWTMiddlewareName]; ok {
@@ -42,45 +45,39 @@ func JWTMiddleware(api huma.API, secret string) func(ctx huma.Context, next func
 			}
 		}
 
-		// 認証が不要な場合は次のハンドラを実行
+		// 認証不要の場合はそのまま次のハンドラへ
 		if !isAuthorizationRequired {
 			next(ctx)
 			return
 		}
 
-		// Authorization ヘッダを取得
+		// Authorizationヘッダからトークン文字列を取得
 		authHeader := ctx.Header("Authorization")
-
 		if authHeader == "" {
 			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized1")
 			return
 		}
-		// Bearer トークンかどうかを確認
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized2")
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
+		// 設定が有効な場合、Cookieからトークンを取得する
 		if conf.EnableCookieToken {
-
-			// Cookieからトークンを取得
 			var authCookie string
 			if c, err := huma.ReadCookie(ctx, "Authorization"); err != nil {
 				authCookie = ""
 			} else {
 				authCookie = c.Value
 			}
-
 			if authCookie != "" {
 				tokenString = authCookie
 			}
-
 		}
 
-		// JWTトークンの解析および検証
+		// JWTトークンの解析および検証（署名方式はHMAC）
 		token, err := gjwt.Parse(tokenString, func(token *gjwt.Token) (interface{}, error) {
-			// HMAC署名方式であることを確認
 			if _, ok := token.Method.(*gjwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -92,30 +89,53 @@ func JWTMiddleware(api huma.API, secret string) func(ctx huma.Context, next func
 			return
 		}
 
-		// クレーム情報を取得し、コンテキストに保存
+		var authInfo string
+		// クレームから認証情報を抽出し、コンテキストに保存
 		if claims, ok := token.Claims.(gjwt.MapClaims); ok && token.Valid {
-			authInfo := claims["auth"].(string)
-			ctx = huma.WithValue(ctx, "auth-info", authInfo)
+			authInfo = claims["auth"].(string)
 		} else {
 			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized4")
 			return
 		}
 
-		// 認証成功: 次のハンドラを実行
+		if authInfo == "" {
+			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized5")
+			return
+		}
+
+		var auth Claims
+		if auth, err = text.DeserializeJson[Claims](authInfo); err != nil {
+			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized6")
+			return
+		} else {
+			if ok, err := validate(auth); !ok || err != nil {
+				huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized7")
+				return
+			}
+		}
+
+		ctx = huma.WithValue(ctx, "auth", auth)
+
+		// 認証成功時に次のハンドラを実行
 		next(ctx)
 	}
 }
 
-// CreateJWT は、指定されたユーザー情報を含むJWTトークンを生成します。
-// 引数secretは署名検証用シークレット、expはトークンの有効期限、authInfoは認証情報です。
-func CreateJWT(secret string, exp time.Duration, authInfo Claims) (string, error) {
+// CreateJWT は認証情報を含むJWTトークンを生成します。
+// 環境設定からトークンの有効期限およびシークレットキーを取得し、HS256方式で署名します。
+func CreateJWT(authInfo Claims) (string, error) {
 
-	if secret != "" {
-		JWTSecret = secret
+	conf := apiConfig.ApiConfig{}
+	if err := conf.Load(); err != nil {
+		fmt.Println("Error: ", err)
+	}
+
+	if conf.JWTSecret != "" {
+		JWTSecret = conf.JWTSecret
 	}
 
 	claims := gjwt.MapClaims{}
-	claims["exp"] = time.Now().Add(exp).Unix()
+	claims["exp"] = time.Now().Add(time.Minute * time.Duration(conf.JWTExpireMinute)).Unix()
 
 	auth, err := text.SerializeJson[Claims](authInfo)
 	if err != nil {
@@ -123,10 +143,10 @@ func CreateJWT(secret string, exp time.Duration, authInfo Claims) (string, error
 	}
 	claims["auth"] = auth
 
-	// HS256方式で新しいトークンを生成
+	// HS256方式で新しいJWTトークンを生成
 	token := gjwt.NewWithClaims(gjwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(JWTSecret))
 	if err != nil {
 		return "", err
 	}
