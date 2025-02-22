@@ -14,9 +14,9 @@ type DBConfig struct {
 	// User はデータベース接続に使用するユーザー名です。
 	User string `envconfig:"DB_USER" default:"postgres"`
 	// Password はデータベース接続に使用するパスワードです。
-	Password string `envconfig:"DB_PASSWORD" default:"password"`
+	Password string `envconfig:"DB_PASSWORD" default:"postgres"`
 	// Database は使用するデータベース名です。
-	Database string `envconfig:"DB_DATABASE" default:"sample"`
+	Database string `envconfig:"DB_DATABASE" default:"postgres"`
 }
 
 // Load はDBConfigの各フィールドに対して環境変数からの設定値をロードします。

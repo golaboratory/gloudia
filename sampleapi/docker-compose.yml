@@ -1,0 +1,22 @@
+volumes:
+  database:
+    driver: local
+
+services:
+  db:
+    image: groonga/pgroonga:3.2.4-alpine-17
+    command: postgres -c log_destination=stderr -c log_statement=all -c log_connections=on -c log_disconnections=on
+    logging:
+      options:
+        max-size: "10k"
+        max-file: "5"
+    ports: 
+      - "${DB_PORT}:5432"
+    restart: "always"
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE}
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./_initdb:/docker-entrypoint-initdb.d
