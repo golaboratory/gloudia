@@ -13,6 +13,14 @@ type PathIdParam struct {
 	Id int64 `path:"id" example:"1" doc:"ID of the entity"`
 }
 
+type PathTextParam struct {
+	Text string `path:"text" example:"text" doc:"encripte text"`
+}
+
+type ResEncryptedText struct {
+	EncryptedText string `json:"encryptedText" example:"encrypted text" doc:"Encrypted text"`
+}
+
 type ResponseBody[T any] struct {
 	SummaryMessage           string `json:"summaryMessage" example:"Invalid parameters" doc:"Summary message"`
 	HasInvalidParams         bool   `json:"hasInvalidParams" example:"false" doc:"Invalid parameters flag"`

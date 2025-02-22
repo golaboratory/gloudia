@@ -1,62 +1,116 @@
 package security
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex" // 追加
+	"io"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
-var (
-	keyText  = []byte("645E739A7F9F162725C1533DC2C5E827")
-	commonIV = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}
-)
-
+// Cryptography は、AES-GCM に基づく暗号化および復号化機能を提供する型です。
 type Cryptography struct {
-	KeyText  []byte
-	commonIV []byte
+	// 必要に応じてフィールドを追加
 }
 
-// EncryptString は、与えられた文字列をAES暗号化します。
-// 文字列を受け取り、暗号化された文字列とエラーを返します。
+// EncryptString は、与えられた文字列 dataString を AES-GCM を用いて暗号化します。
+// 内部的には、NewSecurityConfig により取得したパスワードとソルトから鍵を生成し使用します。
+//
+// パラメータ:
+//
+//	dataString - 暗号化対象の文字列
+//
+// 戻り値:
+//
+//	Base64 エンコードされた暗号化済み文字列と、エラー値
 func (c *Cryptography) EncryptString(dataString string) (string, error) {
 
-	data := []byte(dataString)
-	block, err := aes.NewCipher(keyText)
+	conf := NewSecurityConfig()
+
+	key := pbkdf2.Key([]byte(conf.Password), []byte(conf.Salt), 1000, 32, sha256.New)
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
-	padded := pkcs7Pad(data)
-	encrypted := make([]byte, len(padded))
-	cbcEncrypt := cipher.NewCBCEncrypter(block, commonIV)
-	cbcEncrypt.CryptBlocks(encrypted, padded)
-	return string(encrypted), nil
+
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	plaintext := []byte(dataString)
+
+	iv := make([]byte, aead.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+
+	// 暗号化処理
+	encryptedData := aead.Seal(iv, iv, plaintext, nil)
+	encoded := base64.StdEncoding.EncodeToString(encryptedData)
+	return encoded, nil
 }
 
-// pkcs7Pad は、PKCS7パディングを使用してデータをパディングします。
-// バイトスライスを受け取り、パディングされたバイトスライスを返します。
-func pkcs7Pad(data []byte) []byte {
-	length := aes.BlockSize - (len(data) % aes.BlockSize)
-	trailing := bytes.Repeat([]byte{byte(length)}, length)
-	return append(data, trailing...)
-}
-
-// Decrypt は、与えられた暗号化文字列をAES復号化します。
-// 暗号化された文字列を受け取り、復号化された文字列とエラーを返します。
+// DecryptString は、与えられた Base64 エンコード済みの暗号化文字列 dataString を AES-GCM を用いて復号化します。
+// 内部的には、NewSecurityConfig により取得したパスワードとソルトから鍵を生成し使用します。
+//
+// パラメータ:
+//
+//	dataString - EncryptString の出力である、Base64 エンコードされた暗号化済み文字列
+//
+// 戻り値:
+//
+//	復号化された文字列と、エラー値
 func (c *Cryptography) DecryptString(dataString string) (string, error) {
-	block, err := aes.NewCipher(keyText)
+
+	conf := NewSecurityConfig()
+
+	key := pbkdf2.Key([]byte(conf.Password), []byte(conf.Salt), 1000, 32, sha256.New)
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
-	decrypted := make([]byte, len(dataString))
-	cbcDecrypt := cipher.NewCBCDecrypter(block, commonIV)
-	cbcDecrypt.CryptBlocks(decrypted, []byte(dataString))
-	return string(pkcs7Unpad(decrypted)), nil
+
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	iv := make([]byte, aead.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+
+	encryptedData, err := base64.StdEncoding.DecodeString(dataString)
+	if err != nil {
+		return "", err
+	}
+
+	if len(encryptedData) < aead.NonceSize() {
+		return "", err
+	}
+
+	iv2, ciphertext := encryptedData[:aead.NonceSize()], encryptedData[aead.NonceSize():]
+	plaintext2, err := aead.Open(nil, iv2, ciphertext, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return string(plaintext2), nil
 }
 
-// pkcs7Unpad は、PKCS7パディングを削除します。
-// パディングされたバイトスライスを受け取り、パディングが削除されたバイトスライスを返します。
-func pkcs7Unpad(data []byte) []byte {
-	dataLength := len(data)
-	padLength := int(data[dataLength-1])
-	return data[:dataLength-padLength]
+// HashString は、与えられた文字列 data を、SecurityConfig に設定されたソルトを利用し pbkdf2 で処理することで
+// 復号不可能なハッシュ値（16進数文字列）に変換します。
+// 同じ文字列を引数として渡した場合は、常に同じ結果を返します。
+func (c *Cryptography) HashString(data string) string {
+	conf := NewSecurityConfig()
+	// pbkdf2 を利用し、固定のソルトと繰り返し回数でハッシュ値を導出する（復号不可能）
+	hash := pbkdf2.Key([]byte(data), []byte(conf.Salt), 1000, 32, sha256.New)
+	return hex.EncodeToString(hash)
 }

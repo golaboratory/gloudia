@@ -6,6 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	controller "github.com/golaboratory/gloudia/api/controllers"
+	sec "github.com/golaboratory/gloudia/core/security"
 	"github.com/golaboratory/gloudia/sampleapi/service"
 	structure "github.com/golaboratory/gloudia/sampleapi/structure/user"
 )
@@ -97,6 +98,18 @@ func (c *User) RegisterRoutes(api huma.API) {
 		}),
 		c.TryLogin)
 
+	huma.Register(api,
+		c.CreateOperation(controller.OperationParams{
+			Method:         http.MethodGet,
+			Path:           "/enc/{text}",
+			AllowAnonymous: true,
+			Summary:        "Encript Text",
+			Description:    "文字列を暗号化する",
+			HandlerFunc:    c.EncriptText,
+			Controller:     c,
+		}),
+		c.EncriptText)
+
 }
 
 func (c *User) FindById(_ context.Context, input *controller.PathIdParam) (*struct{}, error) {
@@ -145,4 +158,14 @@ func (c *User) TryLogin(ctx context.Context, input *structure.LoginInput) (*cont
 
 	return res, err
 
+}
+
+func (c *User) EncriptText(ctx context.Context, input *controller.PathTextParam) (*controller.Res[controller.ResEncryptedText], error) {
+	crypt := sec.Cryptography{}
+	enc := crypt.HashString(input.Text)
+	result := &controller.ResEncryptedText{
+		EncryptedText: enc,
+	}
+
+	return controller.ResponseOk[controller.ResEncryptedText](*result, "")
 }

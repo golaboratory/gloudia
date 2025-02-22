@@ -1,13 +1,10 @@
 package service
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/golaboratory/gloudia/api/middleware"
 	"github.com/golaboratory/gloudia/api/service"
-	pg "github.com/golaboratory/gloudia/core/db"
-	rep "github.com/golaboratory/gloudia/sampleapi/repository/db"
 	model "github.com/golaboratory/gloudia/sampleapi/structure/user"
 )
 
@@ -33,22 +30,23 @@ func (u *User) ValidateForLogin(input *model.LoginInput) (bool, string, error) {
 	if !u.IsValid() {
 		return false, "", nil
 	}
+	/*
+		conn, _ := pg.NewPostgresConnection()
+		defer conn.Close(context.Background())
+		q := rep.New(conn)
+		user, _ := q.TryLogin(
+			*u.Context,
+			rep.TryLoginParams{
+				LoginID:      input.Body.UserId,
+				PasswordHash: input.Body.Password,
+			})
 
-	conn, _ := pg.NewPostgresConnection()
-	defer conn.Close(context.Background())
-	q := rep.New(conn)
-	user, _ := q.TryLogin(
-		*u.Context,
-		rep.TryLoginParams{
-			LoginID:      input.Body.UserId,
-			PasswordHash: input.Body.Password,
-		})
-
-	if user.ID == 0 {
-		u.AddInvalid("userId", "Input is required")
-		u.AddInvalid("password", "Input is required")
-		return false, "", nil
-	}
+		if user.ID == 0 {
+			u.AddInvalid("userId", "Input is required")
+			u.AddInvalid("password", "Input is required")
+			return false, "", nil
+		}
+	*/
 	return u.IsValid(), "", nil
 }
 
