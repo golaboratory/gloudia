@@ -54,11 +54,17 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		// Authorizationヘッダからトークン文字列を取得
 		authHeader := ctx.Header("Authorization")
 		if authHeader == "" {
-			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized1")
+			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized1")
+			if err != nil {
+				fmt.Printf("JWTMiddleware: %s\n", err)
+			}
 			return
 		}
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized2")
+			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized2")
+			if err != nil {
+				fmt.Printf("JWTMiddleware: %s\n", err)
+			}
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -85,7 +91,10 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		})
 		if err != nil || !token.Valid {
 			fmt.Printf("JWTMiddleware: %s\n", err)
-			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized3")
+			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized3")
+			if err != nil {
+				fmt.Printf("JWTMiddleware: %s\n", err)
+			}
 			return
 		}
 
@@ -94,22 +103,34 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		if claims, ok := token.Claims.(gjwt.MapClaims); ok && token.Valid {
 			authInfo = claims["auth"].(string)
 		} else {
-			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized4")
+			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized4")
+			if err != nil {
+				fmt.Printf("JWTMiddleware: %s\n", err)
+			}
 			return
 		}
 
 		if authInfo == "" {
-			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized5")
+			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized5")
+			if err != nil {
+				fmt.Printf("JWTMiddleware: %s\n", err)
+			}
 			return
 		}
 
 		var auth Claims
 		if auth, err = text.DeserializeJson[Claims](authInfo); err != nil {
-			huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized6")
+			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized6")
+			if err != nil {
+				fmt.Printf("JWTMiddleware: %s\n", err)
+			}
 			return
 		} else {
 			if ok, err := validate(auth); !ok || err != nil {
-				huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized7")
+				err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized7")
+				if err != nil {
+					fmt.Printf("JWTMiddleware: %s\n", err)
+				}
 				return
 			}
 		}
