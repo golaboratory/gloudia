@@ -1,9 +1,11 @@
 package db
 
 import (
+	"context"
 	"os"
 	"testing"
 
+	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,4 +30,48 @@ func TestNewPostgresConnection_Failure(t *testing.T) {
 	conn, err := NewPostgresConnection()
 	assert.Error(t, err)
 	assert.Nil(t, conn)
+}
+
+// TestNewPostgresConnection_Success は、embedded-postgresを使用してPostgresへの接続が成功することを検証します。
+func TestNewPostgresConnection_Success(t *testing.T) {
+	// 接続成功用の環境変数を設定
+	os.Setenv("DB_USER", "postgres")
+	os.Setenv("DB_PASSWORD", "postgres")
+	os.Setenv("DB_HOST", "localhost")
+	os.Setenv("DB_PORT", "5433")
+	os.Setenv("DB_DATABASE", "postgres")
+	t.Cleanup(func() {
+		os.Unsetenv("DB_USER")
+		os.Unsetenv("DB_PASSWORD")
+		os.Unsetenv("DB_HOST")
+		os.Unsetenv("DB_PORT")
+		os.Unsetenv("DB_DATABASE")
+	})
+
+	epg := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
+		Username("postgres").
+		Password("postgres").
+		Database("postgres").
+		Version(embeddedpostgres.V12).
+		Port(5433))
+	err := epg.Start()
+	if err != nil {
+		t.Fatalf("failed to start embedded-postgres: %v", err)
+	}
+	// テスト後にembedded-postgresを停止
+	defer func() {
+		if err := epg.Stop(); err != nil {
+			t.Log("failed to stop embedded-postgres:", err)
+		}
+	}()
+
+	conn, err := NewPostgresConnection()
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+
+	// pgx.Conn のPingで接続を確認
+	err = conn.Ping(context.Background())
+	assert.NoError(t, err)
+
+	_ = conn.Close(context.Background())
 }
