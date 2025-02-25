@@ -15,6 +15,7 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/piglig/go-qr v0.2.6
 	github.com/stretchr/testify v1.10.0
+	golang.org/x/crypto v0.34.0
 )
 
 require (
@@ -39,7 +40,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.34.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect

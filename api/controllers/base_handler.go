@@ -99,6 +99,9 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 	}
 }
 
+// ResponseInvalid は、無効なパラメータが検出された場合にエラーレスポンスを生成する関数です。
+// message には概要メッセージ、invalidList には不正なパラメータのリストを指定します。
+// 戻り値は、ResponseBody を含む Res[T] とエラーです。
 func ResponseInvalid[T any](message string, invalidList service.InvalidParamList) (*Res[T], error) {
 
 	result := &Res[T]{
@@ -112,6 +115,9 @@ func ResponseInvalid[T any](message string, invalidList service.InvalidParamList
 	return result, nil
 }
 
+// ResponseOk は、正常なレスポンスを生成する関数です。
+// payload にレスポンスデータ、message に概要メッセージを指定します。
+// 戻り値は、ResponseBody を含む Res[T] とエラーです。
 func ResponseOk[T any](payload T, message string) (*Res[T], error) {
 
 	result := &Res[T]{
@@ -124,4 +130,19 @@ func ResponseOk[T any](payload T, message string) (*Res[T], error) {
 	}
 
 	return result, nil
+}
+
+// NewResponseBinary は、バイナリレスポンス用のhuma.Responseマップを生成する関数です。
+// contentType にはレスポンスのContent-Type、description にはレスポンスの説明を指定します。
+// 戻り値は、HTTPレスポンス定義のマップです。
+func NewResponseBinary(contentType string, description string) map[string]*huma.Response {
+
+	return map[string]*huma.Response{
+		"200": {
+			Description: description,
+			Content: map[string]*huma.MediaType{
+				contentType: {},
+			},
+		},
+	}
 }
