@@ -30,6 +30,10 @@ func TestLoadEnvironmentsWithFile_Success(t *testing.T) {
 	// 環境変数が正しく読み込まれているか検証
 	assert.Equal(t, "testvalue", os.Getenv("TEST_VAR"))
 
+	t.Cleanup(func() {
+		os.Remove(testEnvPath)
+	})
+
 	// テスト終了後に環境変数をクリーンアップ
 	os.Unsetenv("TEST_VAR")
 }
