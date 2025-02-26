@@ -36,6 +36,13 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 		router := chi.NewMux()
 
 		if conf.EnableStatic {
+
+			/*
+
+				TODO : リバースプロキシの設定を追加
+
+			*/
+
 			// Serve static files
 			fileServer := http.FileServer(http.Dir("./static/"))
 
