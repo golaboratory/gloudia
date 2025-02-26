@@ -9,6 +9,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/golaboratory/gloudia/api/middleware"
+	"github.com/golaboratory/gloudia/core/config"
 	"github.com/golaboratory/gloudia/core/ref"
 	"github.com/golaboratory/gloudia/core/text"
 )
@@ -33,10 +34,12 @@ type OperationParams struct {
 }
 
 func (c *BaseController) LoadConfig() {
-	c.ApiConfig = apiConfig.ApiConfig{}
-	if err := c.ApiConfig.Load(); err != nil {
+	var err error
+	c.ApiConfig, err = config.New[apiConfig.ApiConfig]()
+	if err != nil {
 		fmt.Println("Error: ", err)
 	}
+
 }
 
 // CreateOperation は、指定されたパラメータからAPI操作（Operation）を生成します。
@@ -44,8 +47,8 @@ func (c *BaseController) LoadConfig() {
 func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 
 	var tags []string
-	conf := apiConfig.ApiConfig{}
-	if err := conf.Load(); err != nil {
+	conf, err := config.New[apiConfig.ApiConfig]()
+	if err != nil {
 		fmt.Println("Error: ", err)
 	}
 

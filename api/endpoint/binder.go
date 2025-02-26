@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	apiConfig "github.com/golaboratory/gloudia/api/config"
+	"github.com/golaboratory/gloudia/core/config"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -25,9 +26,9 @@ type Binder struct {
 
 func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 
-	conf := apiConfig.ApiConfig{}
-	if err := conf.Load(); err != nil {
-		return nil, err
+	conf, err := config.New[apiConfig.ApiConfig]()
+	if err != nil {
+		fmt.Println("Error: ", err)
 	}
 
 	cli := humacli.New(func(hooks humacli.Hooks, _ *struct{}) {

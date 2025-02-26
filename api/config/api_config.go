@@ -1,9 +1,5 @@
 package config
 
-import (
-	"github.com/kelseyhightower/envconfig"
-)
-
 // ApiConfig はAPIサーバの設定項目を保持する構造体です。
 // 環境変数から設定値を読み込みます。
 type ApiConfig struct {
@@ -27,12 +23,4 @@ type ApiConfig struct {
 	JWTSecret string `envconfig:"JWT_SECRET" default:"BHqQTg99LmSk$Q,_xe*LM+!P*5PKnR~n"`
 	// JWTExpireMinute はJWTトークンの有効期限（分）です。
 	JWTExpireMinute int `envconfig:"JWT_EXPIRE" default:"480"`
-}
-
-// Load はApiConfigの各フィールドに対して環境変数からの設定値をロードします。
-func (a *ApiConfig) Load() error {
-	if err := envconfig.Process("", a); err != nil {
-		return err
-	}
-	return nil
 }

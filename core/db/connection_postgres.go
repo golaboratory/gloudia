@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golaboratory/gloudia/core/config"
 	"github.com/jackc/pgx/v5"
 )
 
 func NewPostgresConnection() (*pgx.Conn, error) {
-	config := DBConfig{}
-	if err := config.Load(); err != nil {
+	config, err := config.New[DBConfig]()
+	if err != nil {
 		return nil, err
 	}
 

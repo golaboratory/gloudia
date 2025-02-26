@@ -9,6 +9,7 @@ import (
 	apiConfig "github.com/golaboratory/gloudia/api/config"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/golaboratory/gloudia/core/config"
 	"github.com/golaboratory/gloudia/core/text"
 	gjwt "github.com/golang-jwt/jwt"
 )
@@ -25,8 +26,8 @@ var JWTSecret = "BHqQTg99LmSk$Q,_xe*LM+!P*5PKnR~n"
 // また、環境設定に基づきCookieからトークンを取得する処理も行います。
 func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx huma.Context, next func(huma.Context)) {
 
-	conf := apiConfig.ApiConfig{}
-	if err := conf.Load(); err != nil {
+	conf, err := config.New[apiConfig.ApiConfig]()
+	if err != nil {
 		fmt.Println("Error: ", err)
 	}
 
@@ -146,8 +147,8 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 // 環境設定からトークンの有効期限およびシークレットキーを取得し、HS256方式で署名します。
 func CreateJWT(authInfo Claims) (string, error) {
 
-	conf := apiConfig.ApiConfig{}
-	if err := conf.Load(); err != nil {
+	conf, err := config.New[apiConfig.ApiConfig]()
+	if err != nil {
 		fmt.Println("Error: ", err)
 	}
 

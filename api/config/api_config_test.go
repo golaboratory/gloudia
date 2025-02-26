@@ -4,16 +4,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/golaboratory/gloudia/core/config"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestDefaultApiConfig は環境変数が設定されていない場合、ApiConfig.Loadがデフォルト値をセットすることを検証します。
 func TestDefaultApiConfig(t *testing.T) {
 	// テスト前に環境変数をクリア
 	os.Clearenv()
 
-	var cfg ApiConfig
-	err := cfg.Load()
+	// loader.go の New[T]() を利用して ApiConfig を生成
+	cfg, err := config.New[ApiConfig]()
 	assert.NoError(t, err)
 
 	// デフォルト値の検証
@@ -29,7 +29,6 @@ func TestDefaultApiConfig(t *testing.T) {
 	assert.Equal(t, 480, cfg.JWTExpireMinute)
 }
 
-// TestCustomApiConfig は環境変数を設定した場合、ApiConfig.Loadが各フィールドに正しい値を反映することを検証します。
 func TestCustomApiConfig(t *testing.T) {
 	// 環境変数を設定
 	os.Setenv("PORT", "9999")
@@ -48,8 +47,8 @@ func TestCustomApiConfig(t *testing.T) {
 		os.Clearenv()
 	})
 
-	var cfg ApiConfig
-	err := cfg.Load()
+	// loader.go の New[T]() を利用して ApiConfig を生成
+	cfg, err := config.New[ApiConfig]()
 	assert.NoError(t, err)
 
 	// 環境変数で設定した値の検証

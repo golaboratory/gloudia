@@ -6,6 +6,7 @@ import (
 	apiConfig "github.com/golaboratory/gloudia/api/config"
 	endpoints "github.com/golaboratory/gloudia/api/endpoint"
 	"github.com/golaboratory/gloudia/api/middleware"
+	"github.com/golaboratory/gloudia/core/config"
 	"github.com/golaboratory/gloudia/sampleapi/handler"
 )
 
@@ -19,11 +20,10 @@ var (
 func main() {
 
 	// ① API設定のロード: 環境変数等から設定値を取得します。
-	conf := apiConfig.ApiConfig{}
-	if err := conf.Load(); err != nil {
+	conf, err := config.New[apiConfig.ApiConfig]()
+	if err != nil {
 		fmt.Println("Error: ", err)
 	}
-
 	// ② Binderの初期化: APIのルートパス、タイトル、バージョンを設定し、JWT検証関数を設定します。
 	binder := &endpoints.Binder{
 		RootPath:   conf.RootPath,   // APIのベースパスを設定

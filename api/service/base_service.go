@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golaboratory/gloudia/api/config"
+	apiconfig "github.com/golaboratory/gloudia/api/config"
+	"github.com/golaboratory/gloudia/core/config"
 )
 
 // InvalidParam は、バリデーションエラーが発生したパラメータの情報を保持する構造体です。
@@ -24,14 +25,17 @@ type InvalidParamList []InvalidParam
 type BaseService struct {
 	Context     *context.Context
 	InvalidList InvalidParamList
-	APIConfig   config.ApiConfig
+	APIConfig   apiconfig.ApiConfig
 }
 
 func (b *BaseService) LoadConfig() {
-	b.APIConfig = config.ApiConfig{}
-	if err := b.APIConfig.Load(); err != nil {
+
+	conf, err := config.New[apiconfig.ApiConfig]()
+	if err != nil {
 		fmt.Println("Error: ", err)
 	}
+
+	b.APIConfig = conf
 
 }
 

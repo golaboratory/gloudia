@@ -1,9 +1,5 @@
 package db
 
-import (
-	"github.com/kelseyhightower/envconfig"
-)
-
 // DBConfig はデータベース接続に必要な設定を保持する構造体です。
 // 環境変数から設定値を読み込みます。
 type DBConfig struct {
@@ -17,12 +13,4 @@ type DBConfig struct {
 	Password string `envconfig:"DB_PASSWORD" default:"postgres"`
 	// Database は使用するデータベース名です。
 	Database string `envconfig:"DB_DATABASE" default:"postgres"`
-}
-
-// Load はDBConfigの各フィールドに対して環境変数からの設定値をロードします。
-func (a *DBConfig) Load() error {
-	if err := envconfig.Process("", a); err != nil {
-		return err
-	}
-	return nil
 }
