@@ -39,31 +39,43 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 		router := chi.NewMux()
 
 		if conf.EnableStatic {
+
+			sconf, err := config.New[apiConfig.StaticConfig]()
+			if err != nil {
+				fmt.Println("Error: ", err)
+			}
+
 			// Serve static files
-			fileServer := http.FileServer(http.Dir("./static/"))
-			router.Get("/app/*",
+			fileServer := http.FileServer(http.Dir(sconf.HostingDirectory))
+			router.Get(fmt.Sprintf("%s/*", sconf.BindingPath),
 				func(w http.ResponseWriter, r *http.Request) {
-					http.StripPrefix("/app/", fileServer).ServeHTTP(w, r)
+					http.StripPrefix(fmt.Sprintf("%s/", sconf.BindingPath), fileServer).ServeHTTP(w, r)
 				},
 			)
 		}
 
 		if conf.EnableSpaProxy {
-			targetURL, err := url.Parse("http://localhost:8000")
+
+			pconf, err := config.New[apiConfig.ProxyConfig]()
+			if err != nil {
+				fmt.Println("Error: ", err)
+			}
+
+			targetURL, err := url.Parse(pconf.BackendURL)
 			if err != nil {
 				fmt.Printf("リバースプロキシURLの解析に失敗: %v\n", err)
 			} else {
 				proxy := httputil.NewSingleHostReverseProxy(targetURL)
-				router.Get("/app/*", func(w http.ResponseWriter, r *http.Request) {
+				router.Get(fmt.Sprintf("%s/*", pconf.BindingPath), func(w http.ResponseWriter, r *http.Request) {
 					r.URL.Scheme = targetURL.Scheme
 					r.URL.Host = targetURL.Host
 					r.Host = targetURL.Host
 					r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
 					r.Header.Set("X-Origin-Host", targetURL.Host)
 
-					if strings.HasPrefix(r.URL.Path, "/app") {
+					if strings.HasPrefix(r.URL.Path, pconf.BindingPath) {
 						fmt.Println("Path: ", r.URL.Path)
-						r.URL.Path = r.URL.Path[len("/app"):]
+						r.URL.Path = r.URL.Path[len(pconf.BindingPath):]
 					}
 
 					proxy.ServeHTTP(w, r)

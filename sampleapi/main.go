@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	apiConfig "github.com/golaboratory/gloudia/api/config"
-	endpoints "github.com/golaboratory/gloudia/api/endpoint"
+	endpoints "github.com/golaboratory/gloudia/api/endpoints"
 	"github.com/golaboratory/gloudia/api/middleware"
 	"github.com/golaboratory/gloudia/core/config"
 	"github.com/golaboratory/gloudia/sampleapi/handler"
