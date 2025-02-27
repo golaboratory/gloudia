@@ -3,6 +3,9 @@ package endpoints
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strings"
 
 	apiConfig "github.com/golaboratory/gloudia/api/config"
 	"github.com/golaboratory/gloudia/core/config"
@@ -36,21 +39,36 @@ func (b *Binder) Bind(endpoints []Endpoint) (humacli.CLI, error) {
 		router := chi.NewMux()
 
 		if conf.EnableStatic {
-
-			/*
-
-				TODO : リバースプロキシの設定を追加
-
-			*/
-
 			// Serve static files
 			fileServer := http.FileServer(http.Dir("./static/"))
-
 			router.Get("/app/*",
 				func(w http.ResponseWriter, r *http.Request) {
 					http.StripPrefix("/app/", fileServer).ServeHTTP(w, r)
 				},
 			)
+		}
+
+		if conf.EnableSpaProxy {
+			targetURL, err := url.Parse("http://localhost:8000")
+			if err != nil {
+				fmt.Printf("リバースプロキシURLの解析に失敗: %v\n", err)
+			} else {
+				proxy := httputil.NewSingleHostReverseProxy(targetURL)
+				router.Get("/app/*", func(w http.ResponseWriter, r *http.Request) {
+					r.URL.Scheme = targetURL.Scheme
+					r.URL.Host = targetURL.Host
+					r.Host = targetURL.Host
+					r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
+					r.Header.Set("X-Origin-Host", targetURL.Host)
+
+					if strings.HasPrefix(r.URL.Path, "/app") {
+						fmt.Println("Path: ", r.URL.Path)
+						r.URL.Path = r.URL.Path[len("/app"):]
+					}
+
+					proxy.ServeHTTP(w, r)
+				})
+			}
 		}
 
 		config := huma.DefaultConfig(b.APITitle, b.APIVersion)

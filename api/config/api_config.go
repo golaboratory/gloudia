@@ -8,7 +8,9 @@ type ApiConfig struct {
 	// EnableJWT はJWT認証を有効にするか否かを示します。
 	EnableJWT bool `envconfig:"ENABLE_JWT" default:"true"`
 	// EnableStatic は静的ファイルの提供を有効にするか否かを示します。
-	EnableStatic bool `envconfig:"ENABLE_STATIC" default:"true"`
+	EnableStatic bool `envconfig:"ENABLE_STATIC" default:"false"`
+	// EnableSpaProxy はSPAのプロキシを有効にするか否かを示します。
+	EnableSpaProxy bool `envconfig:"ENABLE_SPA_PROXY" default:"true"`
 	// EnableSSL はSSL通信を有効にするか否かを示します。
 	EnableSSL bool `envconfig:"ENABLE_SSL" default:"false"`
 	// EnableCookieToken はCookieからのJWTトークン取得を有効にするかを示します。
