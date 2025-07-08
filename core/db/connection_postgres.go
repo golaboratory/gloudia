@@ -9,18 +9,18 @@ import (
 )
 
 func NewPostgresConnection() (*pgx.Conn, error) {
-	config, err := config.New[DBConfig]()
+	dbConfig, err := config.New[DBConfig]()
 	if err != nil {
 		return nil, err
 	}
 
 	databaseUrl := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
-		config.User,
-		config.Password,
-		config.Host,
-		config.Port,
-		config.Database)
+		dbConfig.User,
+		dbConfig.Password,
+		dbConfig.Host,
+		dbConfig.Port,
+		dbConfig.Database)
 
 	conn, err := pgx.Connect(
 		context.Background(),
