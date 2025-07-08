@@ -5,17 +5,29 @@ import (
 	"time"
 )
 
+// retryStatus はリトライ対象となるHTTPステータスコードのマップです。
 var retryStatus = map[int]struct{}{
 	http.StatusInternalServerError: {},
 	http.StatusTooManyRequests:     {},
 }
 
+// GloudiaRoundTripper はHTTPリクエストのリトライ処理を行うカスタムRoundTripperです。
+//   - t: 元となるhttp.RoundTripper
+//   - maxRetry: 最大リトライ回数
+//   - wait: リトライ間の待機時間
 type GloudiaRoundTripper struct {
 	t        http.RoundTripper
 	maxRetry int
 	wait     time.Duration
 }
 
+// RoundTrip はHTTPリクエストを送信し、リトライ対象のステータスコードの場合はリトライを行います。
+// 引数:
+//   - req: 送信するHTTPリクエスト
+//
+// 戻り値:
+//   - *http.Response: レスポンス
+//   - error: エラー情報
 func (r GloudiaRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	var res *http.Response

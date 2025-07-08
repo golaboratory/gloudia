@@ -11,14 +11,25 @@ import (
 	"github.com/goark/koyomi/zodiac"
 )
 
-// ConvertToEraDate は、与えられた日付を和暦の日付文字列に変換します。
-// 日付を受け取り、和暦の日付文字列とエラーを返します。
+// ConvertToEraDate は与えられた日付を和暦の日付文字列に変換します。
+// 引数:
+//   - dt: 変換対象の日付
+//
+// 戻り値:
+//   - string: 和暦の日付文字列
+//   - error: エラー情報
 func ConvertToEraDate(dt time.Time) (string, error) {
 	return ConvertToEraDateWithFormat(dt, "ggggyy年MM月dd日")
 }
 
-// ConvertToEraDateWithFormat は、与えられた日付を指定されたフォーマットの和暦日付文字列に変換します。
-// 日付とフォーマット文字列を受け取り、和暦の日付文字列とエラーを返します。
+// ConvertToEraDateWithFormat は与えられた日付を指定されたフォーマットの和暦日付文字列に変換します。
+// 引数:
+//   - dt: 変換対象の日付
+//   - format: フォーマット文字列
+//
+// 戻り値:
+//   - string: 和暦の日付文字列
+//   - error: エラー情報
 func ConvertToEraDateWithFormat(dt time.Time, format string) (string, error) {
 	te := value.NewDate(dt)
 	n, y := te.YearEraString()
@@ -52,29 +63,49 @@ func ConvertToEraDateWithFormat(dt time.Time, format string) (string, error) {
 	return result, nil
 }
 
-// ConvertToZodiacByYear は、与えられた年を干支に変換します。
-// 年を受け取り、干支の文字列とエラーを返します。
+// ConvertToZodiacByYear は与えられた年を干支に変換します。
+// 引数:
+//   - year: 干支に変換する年
+//
+// 戻り値:
+//   - string: 干支の文字列
+//   - error: エラー情報
 func ConvertToZodiacByYear(year int) (string, error) {
 	kan, shi := zodiac.ZodiacYearNumber(year)
 	return fmt.Sprintf("%v%v", kan, shi), nil
 }
 
-// ConvertToZodiacByDate は、与えられた日付の年を干支に変換します。
-// 日付を受け取り、干支の文字列とエラーを返します。
+// ConvertToZodiacByDate は与えられた日付の年を干支に変換します。
+// 引数:
+//   - dt: 干支に変換する日付
+//
+// 戻り値:
+//   - string: 干支の文字列
+//   - error: エラー情報
 func ConvertToZodiacByDate(dt time.Time) (string, error) {
 	return ConvertToZodiacByYear(dt.Year())
 }
 
-// ConvertToDayZodiacByDate は、与えられた日付を日干支に変換します。
-// 日付を受け取り、日干支の文字列とエラーを返します。
+// ConvertToDayZodiacByDate は与えられた日付を日干支に変換します。
+// 引数:
+//   - dt: 日干支に変換する日付
+//
+// 戻り値:
+//   - string: 日干支の文字列
+//   - error: エラー情報
 func ConvertToDayZodiacByDate(dt time.Time) (string, error) {
 	t := value.NewDate(dt)
 	kan, shi := zodiac.ZodiacDayNumber(t)
 	return fmt.Sprintf("%v%v", kan, shi), nil
 }
 
-// CamelToKebab はキャメルケースの文字列を受け取り、ケバブケースの文字列を返却します。
-// 例： "CamelCaseString" -> "camel-case-string"
+// ConvertCamelToKebab はキャメルケースの文字列を受け取り、ケバブケースの文字列を返却します。
+// 例: "CamelCaseString" -> "camel-case-string"
+// 引数:
+//   - s: キャメルケースの文字列
+//
+// 戻り値:
+//   - string: ケバブケースの文字列
 func ConvertCamelToKebab(s string) string {
 	var sb strings.Builder
 	for i, r := range s {

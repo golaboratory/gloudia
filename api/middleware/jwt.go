@@ -26,18 +26,20 @@ var JWTSecret = "BHqQTg99LmSk$Q,_xe*LM+!P*5PKnR~n"
 // また、環境設定に基づきCookieからトークンを取得する処理も行います。
 func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx huma.Context, next func(huma.Context)) {
 
+	// APIサーバの設定情報を取得
 	conf, err := config.New[apiConfig.ApiConfig]()
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
 
+	// 設定ファイルからJWTシークレットを取得
 	if conf.JWTSecret != "" {
 		JWTSecret = conf.JWTSecret
 	}
 
 	return func(ctx huma.Context, next func(huma.Context)) {
 
-		// リクエスト対象の操作が認証を必要とするか確認
+		// この操作が認証を必要とするか判定
 		isAuthorizationRequired := false
 		for _, opScheme := range ctx.Operation().Security {
 			if _, ok := opScheme[JWTMiddlewareName]; ok {
@@ -55,6 +57,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		// Authorizationヘッダからトークン文字列を取得
 		authHeader := ctx.Header("Authorization")
 		if authHeader == "" {
+			// ヘッダが無い場合は認証エラー
 			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized1")
 			if err != nil {
 				fmt.Printf("JWTMiddleware: %s\n", err)
@@ -62,6 +65,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 			return
 		}
 		if !strings.HasPrefix(authHeader, "Bearer ") {
+			// Bearerスキームでない場合は認証エラー
 			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized2")
 			if err != nil {
 				fmt.Printf("JWTMiddleware: %s\n", err)
@@ -70,7 +74,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// 設定が有効な場合、Cookieからトークンを取得する
+		// Cookieからトークンを取得する設定が有効な場合
 		if conf.EnableCookieToken {
 			var authCookie string
 			if c, err := huma.ReadCookie(ctx, "Authorization"); err != nil {
@@ -91,6 +95,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 			return []byte(JWTSecret), nil
 		})
 		if err != nil || !token.Valid {
+			// トークンが無効な場合は認証エラー
 			fmt.Printf("JWTMiddleware: %s\n", err)
 			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized3")
 			if err != nil {
@@ -100,10 +105,11 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		}
 
 		var authInfo string
-		// クレームから認証情報を抽出し、コンテキストに保存
+		// クレームから認証情報を抽出
 		if claims, ok := token.Claims.(gjwt.MapClaims); ok && token.Valid {
 			authInfo = claims["auth"].(string)
 		} else {
+			// クレームが不正な場合は認証エラー
 			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized4")
 			if err != nil {
 				fmt.Printf("JWTMiddleware: %s\n", err)
@@ -112,6 +118,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		}
 
 		if authInfo == "" {
+			// 認証情報が空の場合は認証エラー
 			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized5")
 			if err != nil {
 				fmt.Printf("JWTMiddleware: %s\n", err)
@@ -120,6 +127,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 		}
 
 		var auth Claims
+		// 認証情報をデシリアライズ
 		if auth, err = text.DeserializeJson[Claims](authInfo); err != nil {
 			err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized6")
 			if err != nil {
@@ -127,6 +135,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 			}
 			return
 		} else {
+			// 認証情報の妥当性を検証
 			if ok, err := validate(auth); !ok || err != nil {
 				err := huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized7")
 				if err != nil {
@@ -136,6 +145,7 @@ func JWTMiddleware(api huma.API, validate func(Claims) (bool, error)) func(ctx h
 			}
 		}
 
+		// 認証情報をコンテキストにセット
 		ctx = huma.WithValue(ctx, "auth", auth)
 
 		// 認証成功時に次のハンドラを実行

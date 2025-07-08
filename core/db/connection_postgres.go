@@ -8,6 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// NewPostgresConnection はPostgreSQLデータベースへの新しい接続を確立します。
+// 戻り値:
+//   - *pgx.Conn: データベース接続オブジェクト
+//   - error: 接続時に発生したエラー。正常に接続できた場合はnilを返します。
 func NewPostgresConnection() (*pgx.Conn, error) {
 	dbConfig, err := config.New[DBConfig]()
 	if err != nil {

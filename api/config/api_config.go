@@ -1,19 +1,19 @@
 package config
 
 // ApiConfig はAPIサーバの設定項目を保持する構造体です。
-// 環境変数から設定値を読み込みます。
+// 各フィールドは環境変数から設定値を読み込みます。
 type ApiConfig struct {
 	// Port はサーバがリッスンするポート番号です。
 	Port int `envconfig:"PORT" default:"8888"`
-	// EnableJWT はJWT認証を有効にするか否かを示します。
+	// EnableJWT はJWT認証を有効にするかどうかを示します。
 	EnableJWT bool `envconfig:"ENABLE_JWT" default:"true"`
-	// EnableStatic は静的ファイルの提供を有効にするか否かを示します。
+	// EnableStatic は静的ファイルの提供を有効にするかどうかを示します。
 	EnableStatic bool `envconfig:"ENABLE_STATIC" default:"false"`
-	// EnableSpaProxy はSPAのプロキシを有効にするか否かを示します。
+	// EnableSpaProxy はSPAのプロキシを有効にするかどうかを示します。
 	EnableSpaProxy bool `envconfig:"ENABLE_SPA_PROXY" default:"true"`
-	// EnableSSL はSSL通信を有効にするか否かを示します。
+	// EnableSSL はSSL通信を有効にするかどうかを示します。
 	EnableSSL bool `envconfig:"ENABLE_SSL" default:"false"`
-	// EnableCookieToken はCookieからのJWTトークン取得を有効にするかを示します。
+	// EnableCookieToken はCookieからのJWTトークン取得を有効にするかどうかを示します。
 	EnableCookieToken bool `envconfig:"ENABLE_COOKIE_TOKEN" default:"true"`
 	// RootPath はAPIのルートパスです。
 	RootPath string `envconfig:"ROOT_PATH" default:"/api"`

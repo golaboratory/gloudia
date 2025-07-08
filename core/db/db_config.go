@@ -1,7 +1,7 @@
 package db
 
 // DBConfig はデータベース接続に必要な設定を保持する構造体です。
-// 環境変数から設定値を読み込みます。
+// 各フィールドは環境変数から設定値を読み込みます。
 type DBConfig struct {
 	// Host はデータベースサーバのホスト名です。
 	Host string `envconfig:"DB_HOST" default:"localhost"`

@@ -1,7 +1,7 @@
 package config
 
 // StaticConfig は静的ファイルのホスティング設定を保持する構造体です。
-// 環境変数から値をロードし、ホスティングディレクトリとバインディングパスを指定します。
+// 各フィールドは環境変数から設定値を読み込みます。
 type StaticConfig struct {
 	// HostingDirectory は静的ファイルが配置されるディレクトリのパスです。
 	HostingDirectory string `envconfig:"HOSTING_DIRECTORY" default:"./static/"`

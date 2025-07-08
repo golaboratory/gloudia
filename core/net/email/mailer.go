@@ -7,7 +7,11 @@ import (
 	"github.com/jordan-wright/email"
 )
 
-// Server は、メールサーバーの設定を保持する構造体です。
+// Server はメールサーバーの設定を保持する構造体です。
+//   - Host: メールサーバーのホスト名
+//   - Port: メールサーバーのポート番号
+//   - UseSsl: SSLを使用するかどうか
+//   - NeedSmtpAuth: SMTP認証が必要かどうか
 type Server struct {
 	Host         string // メールサーバーのホスト名
 	Port         int    // メールサーバーのポート番号
@@ -15,16 +19,29 @@ type Server struct {
 	NeedSmtpAuth bool   // SMTP認証が必要かどうか
 }
 
-// Credentials は、メールサーバーの認証情報を保持する構造体です。
+// Credentials はメールサーバーの認証情報を保持する構造体です。
+//   - Username: ユーザー名
+//   - Password: パスワード
 type Credentials struct {
 	Username string // ユーザー名
 	Password string // パスワード
 }
 
-// Mailer は、メールの送信に必要な情報を保持する構造体です。
+// Mailer はメールの送信に必要な情報を保持する構造体です。
+//   - Server: メールサーバーの設定
+//   - Credentials: 認証情報
+//   - From: 送信者のメールアドレス
+//   - SenderName: 送信者の名前
+//   - To: 宛先のメールアドレス
+//   - Cc: CCのメールアドレス
+//   - Bcc: BCCのメールアドレス
+//   - Subject: メールの件名
+//   - Body: メールの本文
+//   - AttachFiles: 添付ファイルのパス
+//   - UseHTMLBody: HTML形式の本文を使用するかどうか
 type Mailer struct {
-	Server      Server      // メールサーバーの設定
-	Credentials Credentials // 認証情報
+	Server      Server
+	Credentials Credentials
 
 	From        string   // 送信者のメールアドレス
 	SenderName  string   // 送信者の名前
@@ -38,8 +55,8 @@ type Mailer struct {
 	UseHTMLBody bool // HTML形式の本文を使用するかどうか
 }
 
-// Send は、メールを送信するメソッドです。
-// メールの送信に成功した場合は nil を返し、エラーが発生した場合はエラーを返します。
+// Send はメールを送信するメソッドです。
+// メールの送信に成功した場合はnilを返し、エラーが発生した場合はエラーを返します。
 func (m *Mailer) Send() error {
 	e := email.NewEmail()
 

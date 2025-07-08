@@ -9,16 +9,21 @@ import (
 	"time"
 )
 
-// Client はHTTPクライアントを表します。
+// Client はHTTPクライアントを表す構造体です。
+//   - UseBearerToken: ベアラートークンを使用するかどうか
+//   - BearerToken: ベアラートークン
+//   - Timeout: タイムアウト時間（秒）
+//   - RetryCount: リトライ回数
+//   - HttpClient: HTTPクライアント
 type Client struct {
-	UseBearerToken bool         // ベアラートークンを使用するかどうか
-	BearerToken    string       // ベアラートークン
-	Timeout        int          // タイムアウト時間（秒）
-	RetryCount     int          // リトライ回数
-	HttpClient     *http.Client // HTTPクライアント
+	UseBearerToken bool
+	BearerToken    string
+	Timeout        int
+	RetryCount     int
+	HttpClient     *http.Client
 }
 
-// Init はHTTPクライアントを初期化します。
+// init はHTTPクライアントを初期化します。
 func (c *Client) init() {
 	var retry = 1
 	if c.RetryCount > 1 {
@@ -36,6 +41,9 @@ func (c *Client) init() {
 }
 
 // GetString は指定されたURLから文字列を取得します。
+// 戻り値:
+//   - string: レスポンス文字列
+//   - error: エラー情報
 func (c *Client) GetString(url string) (string, error) {
 	arr, err := c.Get(url)
 	if err != nil {
@@ -45,6 +53,9 @@ func (c *Client) GetString(url string) (string, error) {
 }
 
 // GetFile は指定されたURLからファイルを取得し、一時ファイルとして保存します。
+// 戻り値:
+//   - string: 一時ファイルのパス
+//   - error: エラー情報
 func (c *Client) GetFile(url string) (string, error) {
 	arr, err := c.Get(url)
 	if err != nil {
@@ -70,6 +81,9 @@ func (c *Client) GetFile(url string) (string, error) {
 }
 
 // Get は指定されたURLからデータを取得します。
+// 戻り値:
+//   - []byte: レスポンスデータ
+//   - error: エラー情報
 func (c *Client) Get(url string) ([]byte, error) {
 
 	c.init()
@@ -103,6 +117,9 @@ func (c *Client) Get(url string) ([]byte, error) {
 }
 
 // PostJson は指定されたURLにJSONデータをPOSTし、レスポンスを文字列として返します。
+// 戻り値:
+//   - string: レスポンス文字列
+//   - error: エラー情報
 func (c *Client) PostJson(url string, json string) (string, error) {
 	arr, err := c.Post(url, []byte(json), "application/json")
 	if err != nil {
@@ -112,6 +129,9 @@ func (c *Client) PostJson(url string, json string) (string, error) {
 }
 
 // Post は指定されたURLにデータをPOSTし、レスポンスをバイト配列として返します。
+// 戻り値:
+//   - []byte: レスポンスデータ
+//   - error: エラー情報
 func (c *Client) Post(url string, data []byte, contentType string) ([]byte, error) {
 	c.init()
 

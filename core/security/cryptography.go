@@ -12,21 +12,19 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-// Cryptography は、AES-GCM に基づく暗号化および復号化機能を提供する型です。
+// Cryptography はAES-GCMに基づく暗号化および復号化機能を提供する型です。
 type Cryptography struct {
 	// 必要に応じてフィールドを追加
 }
 
-// EncryptString は、与えられた文字列 dataString を AES-GCM を用いて暗号化します。
-// 内部的には、NewSecurityConfig により取得したパスワードとソルトから鍵を生成し使用します。
-//
-// パラメータ:
-//
-//	dataString - 暗号化対象の文字列
+// EncryptString は与えられた文字列dataStringをAES-GCMを用いて暗号化します。
+// 内部的にはNewSecurityConfigにより取得したパスワードとソルトから鍵を生成し使用します。
+// 引数:
+//   - dataString: 暗号化対象の文字列
 //
 // 戻り値:
-//
-//	Base64 エンコードされた暗号化済み文字列と、エラー値
+//   - string: Base64エンコードされた暗号化済み文字列
+//   - error: エラー情報
 func (c *Cryptography) EncryptString(dataString string) (string, error) {
 
 	conf := NewSecurityConfig()
@@ -56,16 +54,14 @@ func (c *Cryptography) EncryptString(dataString string) (string, error) {
 	return encoded, nil
 }
 
-// DecryptString は、与えられた Base64 エンコード済みの暗号化文字列 dataString を AES-GCM を用いて復号化します。
-// 内部的には、NewSecurityConfig により取得したパスワードとソルトから鍵を生成し使用します。
-//
-// パラメータ:
-//
-//	dataString - EncryptString の出力である、Base64 エンコードされた暗号化済み文字列
+// DecryptString は与えられたBase64エンコード済みの暗号化文字列dataStringをAES-GCMを用いて復号化します。
+// 内部的にはNewSecurityConfigにより取得したパスワードとソルトから鍵を生成し使用します。
+// 引数:
+//   - dataString: EncryptStringの出力であるBase64エンコードされた暗号化済み文字列
 //
 // 戻り値:
-//
-//	復号化された文字列と、エラー値
+//   - string: 復号化された文字列
+//   - error: エラー情報
 func (c *Cryptography) DecryptString(dataString string) (string, error) {
 
 	conf := NewSecurityConfig()
@@ -105,9 +101,14 @@ func (c *Cryptography) DecryptString(dataString string) (string, error) {
 	return string(plaintext2), nil
 }
 
-// HashString は、与えられた文字列 data を、SecurityConfig に設定されたソルトを利用し pbkdf2 で処理することで
+// HashString は与えられた文字列dataをSecurityConfigに設定されたソルトを利用しpbkdf2で処理することで
 // 復号不可能なハッシュ値（16進数文字列）に変換します。
-// 同じ文字列を引数として渡した場合は、常に同じ結果を返します。
+// 同じ文字列を引数として渡した場合は常に同じ結果を返します。
+// 引数:
+//   - data: ハッシュ化対象の文字列
+//
+// 戻り値:
+//   - string: 16進数文字列のハッシュ値
 func (c *Cryptography) HashString(data string) string {
 	conf := NewSecurityConfig()
 	// pbkdf2 を利用し、固定のソルトと繰り返し回数でハッシュ値を導出する（復号不可能）

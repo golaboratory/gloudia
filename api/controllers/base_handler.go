@@ -14,15 +14,15 @@ import (
 	"github.com/golaboratory/gloudia/core/text"
 )
 
-// BaseController は基本的なコントローラを表現する構造体です。
-// APIとの連携や、コントローラ名、基本パスを管理します。
+// BaseController は基本的なコントローラを表す構造体です。
+// APIとの連携やコントローラ名、基本パスなどを管理します。
 type BaseController struct {
 	Api       huma.API
 	ApiConfig apiConfig.ApiConfig
 }
 
-// OperationParams は、API操作作成時に使用するパラメータ情報を保持する構造体です。
-// メソッド、パス、概要、説明、ハンドラ関数などの情報が含まれます。
+// OperationParams はAPI操作作成時に使用するパラメータ情報を保持する構造体です。
+// メソッド、パス、概要、説明、ハンドラ関数などの情報を含みます。
 type OperationParams struct {
 	Method         string
 	Path           string
@@ -33,6 +33,7 @@ type OperationParams struct {
 	Controller     any
 }
 
+// LoadConfig はAPI設定情報を読み込みます。
 func (c *BaseController) LoadConfig() {
 	var err error
 	c.ApiConfig, err = config.New[apiConfig.ApiConfig]()
@@ -42,8 +43,8 @@ func (c *BaseController) LoadConfig() {
 
 }
 
-// CreateOperation は、指定されたパラメータからAPI操作（Operation）を生成します。
-// 各操作に一意のOperationIDを割り当て、タグ情報を設定します。
+// CreateOperation は指定されたパラメータからAPI操作（Operation）を生成します。
+// 各操作に一意のOperationIDを割り当て、タグ情報やセキュリティ情報を設定します。
 func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 
 	var tags []string
@@ -102,9 +103,9 @@ func (c *BaseController) CreateOperation(param OperationParams) huma.Operation {
 	}
 }
 
-// ResponseInvalid は、無効なパラメータが検出された場合にエラーレスポンスを生成する関数です。
+// ResponseInvalid は無効なパラメータが検出された場合にエラーレスポンスを生成します。
 // message には概要メッセージ、invalidList には不正なパラメータのリストを指定します。
-// 戻り値は、ResponseBody を含む Res[T] とエラーです。
+// 戻り値はResponseBodyを含むRes[T]とエラーです。
 func ResponseInvalid[T any](message string, invalidList service.InvalidParamList) (*Res[T], error) {
 
 	result := &Res[T]{
@@ -118,9 +119,9 @@ func ResponseInvalid[T any](message string, invalidList service.InvalidParamList
 	return result, nil
 }
 
-// ResponseOk は、正常なレスポンスを生成する関数です。
+// ResponseOk は正常なレスポンスを生成します。
 // payload にレスポンスデータ、message に概要メッセージを指定します。
-// 戻り値は、ResponseBody を含む Res[T] とエラーです。
+// 戻り値はResponseBodyを含むRes[T]とエラーです。
 func ResponseOk[T any](payload T, message string) (*Res[T], error) {
 
 	result := &Res[T]{
@@ -135,9 +136,9 @@ func ResponseOk[T any](payload T, message string) (*Res[T], error) {
 	return result, nil
 }
 
-// NewResponseBinary は、バイナリレスポンス用のhuma.Responseマップを生成する関数です。
+// NewResponseBinary はバイナリレスポンス用のhuma.Responseマップを生成します。
 // contentType にはレスポンスのContent-Type、description にはレスポンスの説明を指定します。
-// 戻り値は、HTTPレスポンス定義のマップです。
+// 戻り値はHTTPレスポンス定義のマップです。
 func NewResponseBinary(contentType string, description string) map[string]*huma.Response {
 
 	return map[string]*huma.Response{

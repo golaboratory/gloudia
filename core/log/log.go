@@ -5,10 +5,12 @@ import (
 	"os"
 )
 
-// Level は logger の出力レベルを表します。
+// Level はloggerの出力レベルを表す型です。
 type Level slog.Level
 
 // Handler はログのフォーマットタイプを表す列挙型です。
+//   - Text: テキスト形式
+//   - Json: JSON形式
 type Handler int
 
 const (
@@ -18,18 +20,18 @@ const (
 	Json
 )
 
-// Logger は slog.Logger をラップしたカスタムロガーです。
+// Logger はslog.Loggerをラップしたカスタムロガーです。
 type Logger struct {
 	*slog.Logger
 }
 
-// New は指定されたレベルとハンドラータイプに基づいて新しい Logger を生成します。
+// New は指定されたレベルとハンドラータイプに基づいて新しいLoggerを生成します。
 // 引数:
-//   - level: ログ出力の最小レベル。
-//   - handler: ログ出力形式（Text または Json）。
+//   - level: ログ出力の最小レベル
+//   - handler: ログ出力形式（TextまたはJson）
 //
 // 戻り値:
-//   - *Logger: 生成された Logger インスタンス。
+//   - *Logger: 生成されたLoggerインスタンス
 func New(level Level, handler Handler) *Logger {
 	opts := &slog.HandlerOptions{
 		Level: slog.Level(level),
