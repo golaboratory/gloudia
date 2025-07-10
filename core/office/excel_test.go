@@ -12,12 +12,20 @@ func createTempExcelFile(t *testing.T) (string, func()) {
 	t.Helper()
 	f := excelize.NewFile()
 	sheetName := "Sheet1"
-	f.NewSheet(sheetName)
+	_, err := f.NewSheet(sheetName)
+	if err != nil {
+		t.Fatalf("failed to create new sheet: %v", err)
+	}
 	path := filepath.Join(os.TempDir(), "test_excel.xlsx")
 	if err := f.SaveAs(path); err != nil {
 		t.Fatalf("failed to save temp excel file: %v", err)
 	}
-	return path, func() { os.Remove(path) }
+	return path, func() {
+		err := os.Remove(path)
+		if err != nil && !os.IsNotExist(err) {
+			t.Errorf("failed to remove temp excel file: %v", err)
+		}
+	}
 }
 
 func TestExcel_Open(t *testing.T) {
