@@ -44,7 +44,6 @@ func TestGregorianYearTo24SekkiList(t *testing.T) {
 				{"冬至", 12, 21},
 			},
 		},
-
 		{
 			2023,
 			[]wantSekki{
