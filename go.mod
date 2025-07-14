@@ -19,14 +19,15 @@ require (
 	github.com/valkey-io/valkey-go v1.0.62
 	github.com/valkey-io/valkey-go/valkeycompat v1.0.62
 	github.com/xuri/excelize/v2 v2.9.1
-	golang.org/x/crypto v0.39.0
-	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
+	golang.org/x/crypto v0.40.0
+	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/goark/errs v1.3.2 // indirect
+	github.com/goark/fetch v0.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -37,12 +38,14 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spiegel-im-spiegel/ics-golang v0.1.1 // indirect
+	github.com/spiegel-im-spiegel/iso8601duration v0.1.1 // indirect
 	github.com/tiendc/go-deepcopy v1.6.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.1 // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
