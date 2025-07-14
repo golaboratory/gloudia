@@ -105,6 +105,12 @@ func calculateYear(year int) (int, bool) {
 	isLeapYear := false
 
 	foo := year % 100
+	if foo == 0 {
+		if year%400 == 0 {
+			return 0, true
+		}
+		return 0, false
+	}
 	bar := (foo * 10) / 2
 	baz := bar / 10
 	qux := bar + (baz / 2)
