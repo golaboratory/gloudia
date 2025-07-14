@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -106,9 +105,9 @@ func calculateYear(year int) (int, bool) {
 	isLeapYear := false
 
 	foo := year % 100
-	bar := int(math.Floor(float64(foo*10) / 2))
-	baz := int(math.Floor(float64(bar) / 10))
-	qux := bar + int(math.Floor(float64(baz)/2))
+	bar := (foo * 10) / 2
+	baz := bar / 10
+	qux := bar + (baz / 2)
 
 	isLeapYear = !strings.HasSuffix(strconv.Itoa(bar), "5") && (baz%2 == 0)
 
@@ -120,8 +119,8 @@ func calculateYear(year int) (int, bool) {
 // 戻り値: 世紀定数
 func calculateCenturyConstant(year int) int {
 
-	y := int(math.Floor(float64(year / 100)))
-	z := int(math.Floor(float64(y / 4)))
+	y := year / 100
+	z := y / 4
 	b := ((y * 44) + z + 13) % 60
 
 	return b
