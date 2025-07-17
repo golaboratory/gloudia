@@ -1,4 +1,4 @@
-package jpcalendar
+package jp
 
 import (
 	"testing"
