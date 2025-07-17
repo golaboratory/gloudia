@@ -16,8 +16,8 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/piglig/go-qr v0.2.6
 	github.com/stretchr/testify v1.10.0
-	github.com/valkey-io/valkey-go v1.0.62
-	github.com/valkey-io/valkey-go/valkeycompat v1.0.62
+	github.com/valkey-io/valkey-go v1.0.63
+	github.com/valkey-io/valkey-go/valkeycompat v1.0.63
 	github.com/xuri/excelize/v2 v2.9.1
 	golang.org/x/crypto v0.40.0
 	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc
@@ -27,7 +27,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/goark/errs v1.3.2 // indirect
-	github.com/goark/fetch v0.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -37,9 +36,7 @@ require (
 	github.com/richardlehane/msoleps v1.0.4 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/spiegel-im-spiegel/ics-golang v0.1.1 // indirect
-	github.com/spiegel-im-spiegel/iso8601duration v0.1.1 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/tiendc/go-deepcopy v1.6.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
