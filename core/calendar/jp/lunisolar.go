@@ -400,3 +400,23 @@ func (c *JapaneseLunisolarCalendar) GetGregorianYear(eraYear, eraID int) (int, e
 	}
 	return 0, fmt.Errorf("invalid era: %d", eraID)
 }
+
+// GetLeapMonth は指定された年（西暦）の閏月を返します。
+// 閏年でない場合は0を返します。
+func (c *JapaneseLunisolarCalendar) GetLeapMonth(lunarYear int) (int, error) {
+	// 指定された年がサポート範囲内か検証
+	if err := c.checkLunarYearRange(lunarYear); err != nil {
+		// エラーの場合は0とエラー情報を返す
+		return 0, err
+	}
+
+	// yearInfoテーブルの0番目の要素（Leap Month情報）を取得
+	leapMonth, err := c.getYearInfo(lunarYear, 0)
+	if err != nil {
+		// これは通常発生しないはずだが、念のため
+		return 0, err
+	}
+
+	// 取得した値をそのまま返す（0の場合は閏月なし）
+	return leapMonth, nil
+}

@@ -303,3 +303,42 @@ func TestToDateTime(t *testing.T) {
 		}
 	}
 }
+
+func TestGetLeapMonth(t *testing.T) {
+	c := NewJapaneseLunisolarCalendar()
+	type testCase struct {
+		year    int
+		want    int
+		wantErr bool
+	}
+	// 1960〜2049年のうち閏月がある年とない年をいくつかピックアップ
+	tests := []testCase{
+		{1960, 6, false},  // 閏月あり
+		{1961, 0, false},  // 閏月なし
+		{1963, 4, false},  // 閏月あり
+		{1976, 8, false},  // 閏月あり
+		{1984, 10, false}, // 閏月あり
+		{1995, 8, false},  // 閏月あり
+		{2006, 7, false},  // 閏月あり
+		{2014, 9, false},  // 閏月あり
+		{2023, 2, false},  // 閏月あり
+		{2044, 7, false},  // 閏月あり
+		{1962, 0, false},  // 閏月なし
+		{2049, 0, false},  // 閏月なし
+		// 境界値外
+		{1959, 0, true},
+		{2050, 0, true},
+		{0, 0, true},
+		{3000, 0, true},
+	}
+	for _, tt := range tests {
+		got, err := c.GetLeapMonth(tt.year)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("GetLeapMonth(%d) error = %v, wantErr %v", tt.year, err, tt.wantErr)
+			continue
+		}
+		if err == nil && got != tt.want {
+			t.Errorf("GetLeapMonth(%d) = %d, want %d", tt.year, got, tt.want)
+		}
+	}
+}
