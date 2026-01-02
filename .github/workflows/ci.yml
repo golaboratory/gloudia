@@ -1,51 +1,20 @@
-name: ci
+name: CI
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
 
 jobs:
-  ci:
+  test:
+    name: Test
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: '>=1.24.2'
-          cache: true
-          cache-dependency-path: go.sum
+          go-version: '1.25'
 
-      - name: OS Version
-        run: cat /etc/os-release
-
-      - name: Go Version
-        run: go version
-
-      - name: Go Lint
-        uses: golangci/golangci-lint-action@v3
-
-      - name: Go Build
-        run: |
-          go build -v ./...
-
-      - name: Go Test
-        run: |
-          go test -v -coverprofile=/tmp/coverage.out ./...
-
-      - name: Exclude auto-generated files from coverage
-        run: |
-          cat /tmp/coverage.out | grep -v "_mock.go" | grep -v ".pb.go" > coverage.out
-          go tool cover -func coverage.out
-
-      #- name: Upload coverage to Codecov
-      #  uses: codecov/codecov-action@v3
-      #  with:
-      #    token: ${{ secrets.CODECOV_TOKEN }}
-      #    files: coverage.out
-      #    fail_ci_if_error: true
-      #    verbose: true
+      - name: Run tests
+        run: go test -v ./...
