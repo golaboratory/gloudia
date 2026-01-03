@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"crypto/rand"
 	"log/slog"
+	"math/big"
 	"strings"
 
 	"github.com/golaboratory/gloudia/environment"
@@ -102,4 +104,98 @@ func containsRunes(s string, runes []rune) bool {
 		}
 	}
 	return false
+}
+
+// GenerateRandomCode は指定された要件に基づいてランダムなパスコードを生成します。
+// 各文字種（大文字、小文字、数字、記号）の使用有無を指定できます。
+// 指定された各文字種から、少なくとも1文字が含まれることが保証されます。
+// 残りは、指定された文字種の和集合からランダムに選択されます。
+// 最終的な結果はシャッフルされます。
+//
+// 引数:
+//   - length: 生成するパスコードの長さ
+//   - includeUpper: 大文字を含めるか
+//   - includeLower: 小文字を含めるか
+//   - includeNumber: 数字を含めるか
+//   - includeSymbol: 記号を含めるか
+//
+// 戻り値:
+//   - string: 生成されたパスコード
+//   - error: 長さが要件を満たさない場合（0以下、または必須文字種数より短い）、または文字種が一つも選択されていない場合のエラー
+func GenerateRandomCode(length int, includeUpper, includeLower, includeNumber, includeSymbol bool) (string, error) {
+	if length <= 0 {
+		return "", ergo.New("length must be greater than 0")
+	}
+
+	var combinedChars []rune
+	var requiredChars []rune
+
+	if includeUpper {
+		combinedChars = append(combinedChars, passwordUpperAlphabets...)
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(passwordUpperAlphabets))))
+		if err != nil {
+			return "", ergo.New("failed to generate random number", slog.String("error", err.Error()))
+		}
+		requiredChars = append(requiredChars, passwordUpperAlphabets[idx.Int64()])
+	}
+
+	if includeLower {
+		combinedChars = append(combinedChars, passwordLowerAlphabets...)
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(passwordLowerAlphabets))))
+		if err != nil {
+			return "", ergo.New("failed to generate random number", slog.String("error", err.Error()))
+		}
+		requiredChars = append(requiredChars, passwordLowerAlphabets[idx.Int64()])
+	}
+
+	if includeNumber {
+		combinedChars = append(combinedChars, passwordNumbers...)
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(passwordNumbers))))
+		if err != nil {
+			return "", ergo.New("failed to generate random number", slog.String("error", err.Error()))
+		}
+		requiredChars = append(requiredChars, passwordNumbers[idx.Int64()])
+	}
+
+	if includeSymbol {
+		combinedChars = append(combinedChars, passwordSymbols...)
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(passwordSymbols))))
+		if err != nil {
+			return "", ergo.New("failed to generate random number", slog.String("error", err.Error()))
+		}
+		requiredChars = append(requiredChars, passwordSymbols[idx.Int64()])
+	}
+
+	if len(combinedChars) == 0 {
+		return "", ergo.New("at least one character type must be selected")
+	}
+
+	if length < len(requiredChars) {
+		return "", ergo.New("length is too short to include all required character types")
+	}
+
+	// 必須文字以外をランダムに埋める
+	resultRunes := make([]rune, 0, length)
+	resultRunes = append(resultRunes, requiredChars...)
+	remaining := length - len(requiredChars)
+
+	for i := 0; i < remaining; i++ {
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(combinedChars))))
+		if err != nil {
+			return "", ergo.New("failed to generate random number", slog.String("error", err.Error()))
+		}
+		resultRunes = append(resultRunes, combinedChars[idx.Int64()])
+	}
+
+	// シャッフル (Fisher-Yates)
+	for i := len(resultRunes) - 1; i > 0; i-- {
+		jBig, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			return "", ergo.New("failed to shuffle", slog.String("error", err.Error()))
+		}
+		j := int(jBig.Int64())
+		resultRunes[i], resultRunes[j] = resultRunes[j], resultRunes[i]
+	}
+
+	return string(resultRunes), nil
 }
