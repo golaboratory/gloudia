@@ -6,19 +6,21 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+
+	"github.com/golaboratory/gloudia/net/httpclient"
 )
 
 // Client はGotenberg APIとの通信を行うクライアントです
 type Client struct {
 	BaseURL    string
-	HTTPClient *http.Client
+	HTTPClient *httpclient.Client
 }
 
 // NewClient は新しいGotenbergクライアントを作成します
 func NewClient(baseURL string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
-		HTTPClient: &http.Client{},
+		HTTPClient: httpclient.NewClient(httpclient.DefaultConfig()),
 	}
 }
 
