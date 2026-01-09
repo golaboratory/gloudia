@@ -43,8 +43,8 @@ type ChatMessage struct {
 type ChatRequest struct {
 	Model       string
 	Messages    []ChatMessage
-	Temperature float32 // 0.0 ~ 2.0 (デフォルト: 1.0)
-	MaxTokens   int     // 0の場合はモデルの上限まで
+	Temperature *float32 // 0.0 ~ 2.0 (デフォルト: 1.0)
+	MaxTokens   int      // 0の場合はモデルの上限まで
 }
 
 // CreateChatCompletion はチャット補完APIを呼び出します。
@@ -58,9 +58,9 @@ func (c *Client) CreateChatCompletion(ctx context.Context, req ChatRequest) (str
 	}
 
 	// デフォルトパラメータの調整
-	temperature := req.Temperature
-	if temperature == 0 {
-		temperature = 1.0
+	var temperature float32 = 1.0
+	if req.Temperature != nil {
+		temperature = *req.Temperature
 	}
 
 	model := req.Model
@@ -95,7 +95,7 @@ type ImageAnalysisRequest struct {
 	SystemPrompt string // AIへの指示（JSONスキーマの説明など）
 	UserPrompt   string // ユーザーからの質問
 	ImageURL     string // 画像のURL (http://... または data:image/jpeg;base64,...)
-	Temperature  float32
+	Temperature  *float32
 	MaxTokens    int
 }
 
@@ -107,10 +107,11 @@ func (c *Client) CreateImageAnalysis(ctx context.Context, req ImageAnalysisReque
 	if model == "" {
 		model = openai.GPT4o
 	}
-	temperature := req.Temperature
-	if temperature == 0 {
-		temperature = 0.0 // 解析タスクなのでランダム性を下げる
+	var temperature float32 = 0.0 // 解析タスクなのでランダム性を下げる
+	if req.Temperature != nil {
+		temperature = *req.Temperature
 	}
+
 	maxTokens := req.MaxTokens
 	if maxTokens == 0 {
 		maxTokens = 1000

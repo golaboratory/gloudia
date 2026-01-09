@@ -107,20 +107,20 @@ func GregorianDateToEtoDayString(dt time.Time) (string, error) {
 func calculateYear(year int) (int, bool) {
 	isLeapYear := false
 
-	foo := year % 100
-	if foo == 0 {
+	yearMod100 := year % 100
+	if yearMod100 == 0 {
 		if year%400 == 0 {
 			return 0, true
 		}
 		return 0, false
 	}
-	bar := (foo * 10) / 2
-	baz := bar / 10
-	qux := bar + (baz / 2)
+	baseVal := (yearMod100 * 10) / 2
+	adjustment := baseVal / 10
+	etoVal := baseVal + (adjustment / 2)
 
-	isLeapYear = !strings.HasSuffix(strconv.Itoa(bar), "5") && (baz%2 == 0)
+	isLeapYear = !strings.HasSuffix(strconv.Itoa(baseVal), "5") && (adjustment%2 == 0)
 
-	return qux, isLeapYear
+	return etoVal, isLeapYear
 }
 
 // calculateCenturyConstant は西暦年から世紀定数を計算して返します。

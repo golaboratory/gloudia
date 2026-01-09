@@ -28,7 +28,7 @@ func TestNewProcessor(t *testing.T) {
 
 	processor := NewProcessor(jobs)
 	assert.NotNil(t, processor)
-	assert.Equal(t, jobs, processor.Processies)
+	assert.Equal(t, jobs, processor.Processors)
 }
 
 func TestProcessor_Process(t *testing.T) {

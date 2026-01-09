@@ -12,9 +12,10 @@ var rokuyoNames = map[int]string{
 	5: "仏滅",
 }
 
+var lunisolar = NewJapaneseLunisolarCalendar()
+
 // GregorianDateToRokuyoString はグレゴリオ暦の日付から六曜（大安・仏滅など）の名称を取得します。
 func GregorianDateToRokuyoString(date time.Time) (string, error) {
-	lunisolar := NewJapaneseLunisolarCalendar()
 
 	lunarYear, lunisolarMonth, lunisolarDay, err := lunisolar.gregorianToLunar(date)
 	if err != nil {

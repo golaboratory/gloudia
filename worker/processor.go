@@ -15,7 +15,7 @@ type JobPayload map[string]any
 // Processor はジョブ実行ロジックを管理する構造体です。
 // ジョブタイプとそれに対応する JobProcessor のマッピングを保持します。
 type Processor struct {
-	Processies map[string]JobProcessor
+	Processors map[string]JobProcessor
 }
 
 // JobProcessor は個別のジョブ処理ロジックを実装するためのインターフェースです。
@@ -29,7 +29,7 @@ type JobProcessor interface {
 // NewProcessor は新しい Processor を作成します。
 // processors: ジョブタイプをキー、対応する処理実装を値とするマップ
 func NewProcessor(processors map[string]JobProcessor) *Processor {
-	return &Processor{Processies: processors}
+	return &Processor{Processors: processors}
 }
 
 // Process はジョブタイプに応じて処理を振り分けます。
@@ -38,7 +38,7 @@ func NewProcessor(processors map[string]JobProcessor) *Processor {
 func (p *Processor) Process(ctx context.Context, jobType string, payloadJSON json.RawMessage) error {
 	slog.InfoContext(ctx, "Processing job", "type", jobType)
 
-	if processor, exists := p.Processies[jobType]; exists {
+	if processor, exists := p.Processors[jobType]; exists {
 		return processor.Process(ctx, jobType, payloadJSON)
 	}
 

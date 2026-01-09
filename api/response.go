@@ -37,7 +37,7 @@ type UnifiedResponseBody[T any] struct {
 // UnifiedResponse はシステム共通のAPIレスポンス形式です。
 // JSONレスポンスのルートとして使用されます。
 type UnifiedResponse[T any] struct {
-	Body UnifiedResponseBody[T] `json:",inline"`
+	Body UnifiedResponseBody[T]
 }
 
 // NewSuccessResponse は正常系のレスポンスを生成するヘルパー関数です。

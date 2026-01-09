@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -13,7 +12,7 @@ import (
 //
 // Authorization ヘッダーから Bearer トークンを読み取り、検証を行います。
 // 検証に成功した場合、トークンのペイロード（Claims）をコンテキストに保存します。
-// ヘッダーが存在しない場合は検証をスキップし、後続の処理に委譲します（ゲストアクセスの考慮）。
+// ヘッダーが存在しない場合は 401 Unauthorized を返します。
 //
 // 引数:
 //
@@ -23,10 +22,9 @@ func NewAuthProvider(maker *auth.TokenMaker) func(huma.Context, func(huma.Contex
 		// 1. Authorization ヘッダーの取得
 		authHeader := ctx.Header("Authorization")
 
-		// ヘッダーがない場合は検証をスキップして次の処理へ (ゲストアクセスの可能性)
-		// ※ 認証必須のエンドポイントかどうかは、各Handler側またはHumaのSecurity Schemeで制御します
+		// ヘッダーがない場合は 401 Unauthorized を返す
 		if authHeader == "" {
-			ctx.SetStatus(http.StatusUnauthorized)
+			ctx.SetStatus(401)
 			return
 		}
 

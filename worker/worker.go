@@ -54,38 +54,53 @@ func NewWorker(worker Worker, cfg Config, jobs map[string]JobProcessor) *WorkerP
 
 // Start はワーカーを開始し、Contextがキャンセルされるまでブロックします。
 // 指定された間隔（cfg.Interval）でジョブのポーリングを行います。
+// Start はワーカーを開始し、Contextがキャンセルされるまでブロックします。
+// 指定された間隔（cfg.Interval）でジョブのポーリングを行います。
 func (w *WorkerProcess) Start(ctx context.Context) {
 	slog.Info("Starting background worker...")
 	ticker := time.NewTicker(w.cfg.Interval)
 	defer ticker.Stop()
 
 	for {
+		// まず1回処理を試みる
+		processed := w.processNextJob(ctx)
+
+		if processed {
+			// 処理できた場合は、待機せずに次を見に行く
+			// ただし、無限ループでCPU占有を防ぐため、コンテキストチェックを行う
+			select {
+			case <-ctx.Done():
+				slog.Info("Stopping background worker...")
+				return
+			default:
+				continue // 即次へ
+			}
+		}
+
+		// 処理しなかった（キュー空）場合は、次のTickまで待つ
 		select {
 		case <-ctx.Done():
 			slog.Info("Stopping background worker...")
 			return
 		case <-ticker.C:
-			w.processNextJob(ctx)
+			// wait
 		}
 	}
 }
 
 // processNextJob はDBから次のジョブを取得して実行します。
-// 1. PopNextJob でジョブを取得
-// 2. ParseJob でジョブ情報を解析
-// 3. Processor でジョブを実行
-// 4. 結果に応じて CompleteJob または FailJob を呼び出し
-func (w *WorkerProcess) processNextJob(ctx context.Context) {
+// 戻り値 bool: ジョブを処理した場合は true, ジョブがなかった場合やエラー時は false
+func (w *WorkerProcess) processNextJob(ctx context.Context) bool {
 
 	jsonJob, err := w.Worker.PopNextJob(ctx)
 
 	if err != nil && jsonJob == nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// ジョブがない場合は何もしない
-			return
+			return false
 		}
 		slog.Error("Failed to fetch job", "error", err)
-		return
+		return false
 	}
 
 	// 3. 処理実行
@@ -93,7 +108,7 @@ func (w *WorkerProcess) processNextJob(ctx context.Context) {
 	jobID, jobType, err := w.Worker.ParseJob(ctx, jsonJob)
 	if err != nil {
 		slog.Error("Failed to parse job", "error", err)
-		return
+		return true // ジョブ自体は取得できたのでtrueを返して次へ行くべきか？ エラーだからリトライ待ちする？ ここでは「消費」した扱いにする
 	}
 
 	processErr := w.processor.Process(ctx, jobType, jsonJob)
@@ -118,4 +133,6 @@ func (w *WorkerProcess) processNextJob(ctx context.Context) {
 			slog.Error("Failed to update job status", "id", jobID, "error", updateErr)
 		}
 	}
+
+	return true
 }

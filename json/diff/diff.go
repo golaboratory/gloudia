@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"reflect"
+	"sort"
 
 	"github.com/newmo-oss/ergo"
 )
@@ -49,7 +50,15 @@ func compareMaps(path string, oldVal, newVal map[string]any) []ChangePoint {
 		allKeys[k] = struct{}{}
 	}
 
-	for key := range allKeys {
+	// ソートされたキーリストを作成
+	keys := make([]string, 0, len(allKeys))
+	for k := range allKeys {
+		keys = append(keys, k)
+	}
+	// 順序を固定
+	sort.Strings(keys)
+
+	for _, key := range keys {
 		vOld := oldVal[key]
 		vNew := newVal[key]
 

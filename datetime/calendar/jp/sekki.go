@@ -1,7 +1,6 @@
 package jp
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -51,7 +50,6 @@ func GregorianYearTo24SekkiList(year int) (map[time.Time]string, error) {
 		y := float64((year + v.YearAdjustmentValue) - 1900)
 		dayOfMonth := int(v.DValue+(v.AValue*y)) - int(y/4)
 		result[time.Date(year, time.Month(v.Month), dayOfMonth, 0, 0, 0, 0, time.UTC)] = k
-		fmt.Printf("%s: %d-%02d-%02d", k, year, v.Month, dayOfMonth)
 	}
 
 	return result, nil

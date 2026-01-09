@@ -32,27 +32,7 @@ func TestNewAuthProvider(t *testing.T) {
 			nextCalled = true
 		})
 
-		// Should skip verify and call next?
-		// Code says: if authHeader == "" { ctx.SetStatus(http.StatusUnauthorized); return }
-		// Wait, line 28 in auth.go:
-		// if authHeader == "" { ctx.SetStatus(http.StatusUnauthorized); return }
-		// So it blocks guests. The comments said "verification skip... (guest access consideration)" but the CODE does return 401.
-		// Actually, comment says "ヘッダーがない場合は検証をスキップして次の処理へ" (Skip verification and proceed).
-		// BUT the code:
-		// if authHeader == "" {
-		//	ctx.SetStatus(http.StatusUnauthorized)
-		//	return
-		//}
-		// This contradicts the comment?
-		// Wait, looking at file view in Step 65:
-		// 26: 		// ヘッダーがない場合は検証をスキップして次の処理へ (ゲストアクセスの可能性)
-		// 28: 		if authHeader == "" {
-		// 29: 			ctx.SetStatus(http.StatusUnauthorized)
-		// 30: 			return
-		// 31: 		}
-		// The code definitely returns 401. The comment might be stale or logic changed.
-		// I will assert based on Code. Code returns 401.
-
+		// 実装ではヘッダーがない場合、401 Unauthorized を返す仕様になっています。
 		assert.False(t, nextCalled)
 		assert.Equal(t, http.StatusUnauthorized, w.Result().StatusCode)
 	})

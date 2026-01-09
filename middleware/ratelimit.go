@@ -1,10 +1,8 @@
 package middleware
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,19 +30,7 @@ func NewRedisRateLimiter(rdb *redis.Client, config RateLimitConfig) func(huma.Co
 	if limitNameInit == "" {
 		limitNameInit = "default"
 	}
-	// 初期化時に既存のレートリミット情報をクリアする
-	// パターン: ratelimit:<limitName>:*
-	pattern := fmt.Sprintf("ratelimit:%s:*", limitNameInit)
-	ctxBg := context.Background()
-
-	// SCANコマンドでキーを検索して削除
-	iter := rdb.Scan(ctxBg, 0, pattern, 0).Iterator()
-	for iter.Next(ctxBg) {
-		rdb.Del(ctxBg, iter.Val())
-	}
-	if err := iter.Err(); err != nil {
-		slog.Error("Failed to clear existing rate limit keys", "error", err)
-	}
+	// 初期化時に既存のレートリミット情報をクリアする処理は削除 (他インスタンスへの影響回避のため)
 
 	return func(ctx huma.Context, next func(huma.Context)) {
 		// 1. クライアントIPの特定 (Nginx考慮)
