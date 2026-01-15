@@ -3,6 +3,8 @@ package infra
 import (
 	"context"
 	"log/slog"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/newmo-oss/ergo"
@@ -12,6 +14,13 @@ import (
 // NewRedisClient はRedisクライアントを初期化します
 // 本番では環境変数からADDR等を取得するように変更してください
 func NewRedisClient(addr string, password string, db int) (*redis.Client, error) {
+	poolSize := 10
+	if env := os.Getenv("REDIS_POOL_SIZE"); env != "" {
+		if v, err := strconv.Atoi(env); err == nil && v > 0 {
+			poolSize = v
+		}
+	}
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         addr,
 		Password:     password,
@@ -19,7 +28,7 @@ func NewRedisClient(addr string, password string, db int) (*redis.Client, error)
 		DialTimeout:  10 * time.Second,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
-		PoolSize:     10, // コネクションプール数
+		PoolSize:     poolSize,
 	})
 
 	// 接続テスト

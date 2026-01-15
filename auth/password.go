@@ -71,7 +71,7 @@ func ValidateStrength(
 func HashPassword(password string) (string, error) {
 
 	var cryptCost = bcrypt.DefaultCost
-	env, err := environment.NewEnvValue[environment.GloudiaEnv]()
+	env, err := environment.NewEnvValue[environment.GloudiaEnv]("")
 	if err == nil {
 		cryptCost = env.CryptCost
 	}

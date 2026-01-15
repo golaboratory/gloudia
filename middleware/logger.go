@@ -37,7 +37,7 @@ func (w *accessLogResponseWriter) Write(b []byte) (int, error) {
 
 // NewLogger は、アクセスログを出力するミドルウェアを返します
 func NewLogger() func(http.Handler) http.Handler {
-	env, err := environment.NewEnvValue[environment.GloudiaEnv]()
+	env, err := environment.NewEnvValue[environment.GloudiaEnv]("")
 	if err != nil {
 		IsDebug = false
 	}

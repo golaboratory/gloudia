@@ -10,10 +10,16 @@ type ErrorMessage string
 // フロントエンドのフォームバリデーション（赤枠表示など）に使用されます。
 type InvalidItem map[FieldName]ErrorMessage
 
+// IUnifiedResponse はレスポンスのステータス設定を行うインターフェースです。
+type IUnifiedResponse interface {
+	SetSuccess(message string)
+	SetInvalid(message string, details InvalidItem)
+	SetError(err error)
+}
+
 // UnifiedResponseBody はレスポンスのボディ部分を定義する構造体です。
-// [T any] は成功時のペイロード（DTOなど）の型を指定します。
-// 正常系、エラー系（バリデーションエラー含む）を問わず、常にこの形式で返却します。
-type UnifiedResponseBody[T any] struct {
+// ペイロード（DTOなど）は含みません。埋め込み構造体として使用されることを想定しています。
+type UnifiedResponseBody struct {
 	// IsInvalid はバリデーションエラーやビジネスロジックエラーがある場合に true となります。
 	IsInvalid bool `json:"isInvalid"`
 
@@ -28,48 +34,26 @@ type UnifiedResponseBody[T any] struct {
 	// Error はビジネスロジックエラーの詳細を表します。
 	// エラーがない場合は omitempty により JSON に含まれません。
 	Error error `json:"error,omitempty"`
-
-	// Payload は API のメインとなるデータです。
-	// エラー時などデータがない場合は omitempty により JSON に含まれません。
-	Payload T `json:"payload,omitempty"`
 }
 
-// UnifiedResponse はシステム共通のAPIレスポンス形式です。
-// JSONレスポンスのルートとして使用されます。
-type UnifiedResponse[T any] struct {
-	Body UnifiedResponseBody[T]
+// SetSuccess は成功時のステータスをセットします。
+func (b *UnifiedResponseBody) SetSuccess(message string) {
+	b.IsInvalid = false
+	b.SummaryMessage = message
 }
 
-// NewSuccessResponse は正常系のレスポンスを生成するヘルパー関数です。
-func NewSuccessResponse[T any](payload T, message string) *UnifiedResponse[T] {
-
-	return &UnifiedResponse[T]{
-		Body: UnifiedResponseBody[T]{
-			IsInvalid:      false,
-			SummaryMessage: message,
-			Payload:        payload,
-		},
-	}
+// SetInvalid はバリデーションエラー時のステータスをセットします。
+func (b *UnifiedResponseBody) SetInvalid(message string, details InvalidItem) {
+	b.IsInvalid = true
+	b.SummaryMessage = message
+	b.InvalidList = details
 }
 
-// NewInvalidResponse はエラー系（バリデーションエラー等）のレスポンスを生成するヘルパー関数です。
-func NewInvalidResponse[T any](message string, details InvalidItem) *UnifiedResponse[T] {
-	return &UnifiedResponse[T]{
-		Body: UnifiedResponseBody[T]{
-			IsInvalid:      true,
-			SummaryMessage: message,
-			InvalidList:    details,
-		},
-	}
-}
-
-// NewErrorResponse はエラー系（バリデーションエラー等）のレスポンスを生成するヘルパー関数です。
-func NewErrorResponse[T any](err error) *UnifiedResponse[T] {
-	return &UnifiedResponse[T]{
-		Body: UnifiedResponseBody[T]{
-			IsInvalid:      true,
-			SummaryMessage: err.Error(),
-			Error:          err,
-		},
+// SetError はビジネスロジックエラー時のステータスをセットします。
+func (b *UnifiedResponseBody) SetError(err error) {
+	b.IsInvalid = true
+	if err != nil {
+		b.SummaryMessage = err.Error()
+		b.Error = err
 	}
 }

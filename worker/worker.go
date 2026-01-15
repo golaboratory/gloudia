@@ -54,8 +54,6 @@ func NewWorker(worker Worker, cfg Config, jobs map[string]JobProcessor) *WorkerP
 
 // Start はワーカーを開始し、Contextがキャンセルされるまでブロックします。
 // 指定された間隔（cfg.Interval）でジョブのポーリングを行います。
-// Start はワーカーを開始し、Contextがキャンセルされるまでブロックします。
-// 指定された間隔（cfg.Interval）でジョブのポーリングを行います。
 func (w *WorkerProcess) Start(ctx context.Context) {
 	slog.Info("Starting background worker...")
 	ticker := time.NewTicker(w.cfg.Interval)
@@ -108,7 +106,12 @@ func (w *WorkerProcess) processNextJob(ctx context.Context) bool {
 	jobID, jobType, err := w.Worker.ParseJob(ctx, jsonJob)
 	if err != nil {
 		slog.Error("Failed to parse job", "error", err)
-		return true // ジョブ自体は取得できたのでtrueを返して次へ行くべきか？ エラーだからリトライ待ちする？ ここでは「消費」した扱いにする
+		// IDが取得できている場合は失敗ステータスに更新する
+		if jobID != 0 {
+			errResult, _ := json.Marshal(map[string]string{"error": fmt.Sprintf("failed to parse job: %v", err)})
+			_ = w.Worker.FailJob(ctx, jobID, json.RawMessage(errResult))
+		}
+		return true
 	}
 
 	processErr := w.processor.Process(ctx, jobType, jsonJob)
@@ -116,8 +119,8 @@ func (w *WorkerProcess) processNextJob(ctx context.Context) bool {
 	if processErr != nil {
 		slog.ErrorContext(ctx, "Job failed", "id", jobID, "error", processErr)
 		// エラー内容をResultに保存
-		errMsg := fmt.Sprintf(`{"error": "%s"}`, processErr.Error())
-		resultJSON = json.RawMessage(errMsg)
+		errResult, _ := json.Marshal(map[string]string{"error": processErr.Error()})
+		resultJSON = json.RawMessage(errResult)
 
 		updateErr := w.Worker.FailJob(ctx, jobID, resultJSON)
 		if updateErr != nil {
@@ -125,7 +128,8 @@ func (w *WorkerProcess) processNextJob(ctx context.Context) bool {
 		}
 	} else {
 		// 成功時の結果 (必要であれば戻り値を保存)
-		resultJSON = json.RawMessage(`{"success": true}`)
+		successResult, _ := json.Marshal(map[string]bool{"success": true})
+		resultJSON = json.RawMessage(successResult)
 
 		updateErr := w.Worker.CompleteJob(ctx, jobID, resultJSON)
 

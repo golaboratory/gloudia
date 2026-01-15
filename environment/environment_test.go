@@ -39,7 +39,7 @@ func TestNewEnvValue(t *testing.T) {
 		t.Setenv("TEST_DURATION", "10s")
 		t.Setenv("TEST_SLICE", "a,b,c")
 
-		cfg, err := environment.NewEnvValue[Config]()
+		cfg, err := environment.NewEnvValue[Config]("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -63,7 +63,7 @@ func TestNewEnvValue(t *testing.T) {
 
 	t.Run("DefaultValues", func(t *testing.T) {
 		// 環境変数を設定しない
-		cfg, err := environment.NewEnvValue[DefaultConfig]()
+		cfg, err := environment.NewEnvValue[DefaultConfig]("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -75,7 +75,7 @@ func TestNewEnvValue(t *testing.T) {
 
 	t.Run("RequiredError", func(t *testing.T) {
 		// 必須環境変数を設定しない
-		_, err := environment.NewEnvValue[RequiredConfig]()
+		_, err := environment.NewEnvValue[RequiredConfig]("")
 		if err == nil {
 			t.Fatal("expected error for missing required variable, got nil")
 		}
@@ -83,7 +83,7 @@ func TestNewEnvValue(t *testing.T) {
 
 	t.Run("RequiredSuccess", func(t *testing.T) {
 		t.Setenv("TEST_REQUIRED", "present")
-		cfg, err := environment.NewEnvValue[RequiredConfig]()
+		cfg, err := environment.NewEnvValue[RequiredConfig]("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -94,7 +94,7 @@ func TestNewEnvValue(t *testing.T) {
 
 	t.Run("TypeConversionError", func(t *testing.T) {
 		t.Setenv("TEST_INT", "not_an_int")
-		_, err := environment.NewEnvValue[Config]()
+		_, err := environment.NewEnvValue[Config]("")
 		if err == nil {
 			t.Fatal("expected error for invalid type conversion, got nil")
 		}
@@ -107,7 +107,7 @@ func TestNewEnvValue(t *testing.T) {
 		// 今回は明示的にタグをつけているケースを確認します。
 		t.Setenv("TEST_SERVER_PORT", "8080")
 
-		cfg, err := environment.NewEnvValue[NestedRoot]()
+		cfg, err := environment.NewEnvValue[NestedRoot]("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -119,7 +119,7 @@ func TestNewEnvValue(t *testing.T) {
 
 	t.Run("NonStructType", func(t *testing.T) {
 		// envconfigは構造体のポインタを期待するため、プリミティブ型を渡すとエラーになることが予想されます
-		_, err := environment.NewEnvValue[int]()
+		_, err := environment.NewEnvValue[int]("")
 		if err == nil {
 			t.Fatal("expected error when T is not a struct, got nil")
 		}
