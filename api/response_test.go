@@ -47,14 +47,59 @@ func TestSetInvalid(t *testing.T) {
 }
 
 func TestSetError(t *testing.T) {
-	err := errors.New("business logic error")
+	t.Run("With Error", func(t *testing.T) {
+		err := errors.New("business logic error")
 
-	resp := &TestResponse{}
-	resp.SetError(err)
+		resp := &TestResponse{}
+		resp.SetError(err)
 
-	assert.NotNil(t, resp)
-	assert.True(t, resp.IsInvalid)
-	assert.Equal(t, err.Error(), resp.SummaryMessage)
-	assert.Equal(t, err, resp.Error)
-	assert.Nil(t, resp.InvalidList)
+		assert.NotNil(t, resp)
+		assert.True(t, resp.IsInvalid)
+		assert.Equal(t, err.Error(), resp.SummaryMessage)
+		assert.Equal(t, err, resp.Error)
+		assert.Nil(t, resp.InvalidList)
+	})
+
+	t.Run("With Nil", func(t *testing.T) {
+		resp := &TestResponse{}
+		resp.SetError(nil)
+
+		assert.NotNil(t, resp)
+		assert.True(t, resp.IsInvalid)
+		// SummaryMessage and Error should remain default/nil if err is nil based on current logic
+		assert.Empty(t, resp.SummaryMessage)
+		assert.Nil(t, resp.Error)
+	})
+}
+
+func TestHelperFunctions(t *testing.T) {
+	t.Run("SetSuccess Helper", func(t *testing.T) {
+		resp := &UnifiedResponseBody{}
+		msg := "Helper Success"
+		SetSuccess(resp, msg)
+
+		assert.False(t, resp.IsInvalid)
+		assert.Equal(t, msg, resp.SummaryMessage)
+	})
+
+	t.Run("SetInvalid Helper", func(t *testing.T) {
+		resp := &UnifiedResponseBody{}
+		msg := "Helper Invalid"
+		details := InvalidItem{"field": "error"}
+		SetInvalid(resp, msg, details)
+
+		assert.True(t, resp.IsInvalid)
+		assert.Equal(t, msg, resp.SummaryMessage)
+		assert.Equal(t, details, resp.InvalidList)
+	})
+
+	t.Run("SetError Helper", func(t *testing.T) {
+		resp := &UnifiedResponseBody{}
+		err := errors.New("Helper Error")
+		SetError(resp, err)
+
+		assert.True(t, resp.IsInvalid)
+		assert.Equal(t, err.Error(), resp.SummaryMessage)
+		assert.Equal(t, err, resp.Error)
+	})
 }

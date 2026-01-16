@@ -58,14 +58,20 @@ func (b *UnifiedResponseBody) SetError(err error) {
 	}
 }
 
-func SetSuccess(resp *UnifiedResponseBody, message string) {
+// SetSuccess は指定されたレスポンスボディに成功ステータスとメッセージを設定するヘルパー関数です。
+func SetSuccess(resp *UnifiedResponseBody, message string) *UnifiedResponseBody {
 	resp.SetSuccess(message)
+	return resp
 }
 
-func SetInvalid(resp *UnifiedResponseBody, message string, details InvalidItem) {
+// SetInvalid は指定されたレスポンスボディにバリデーションエラーステータス、メッセージ、および詳細を設定するヘルパー関数です。
+func SetInvalid(resp *UnifiedResponseBody, message string, details InvalidItem) *UnifiedResponseBody {
 	resp.SetInvalid(message, details)
+	return resp
 }
 
-func SetError(resp *UnifiedResponseBody, err error) {
+// SetError は指定されたレスポンスボディにビジネスロジックエラーステータスを設定するヘルパー関数です。
+func SetError(resp *UnifiedResponseBody, err error) *UnifiedResponseBody {
 	resp.SetError(err)
+	return resp
 }
