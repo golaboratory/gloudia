@@ -57,3 +57,15 @@ func (b *UnifiedResponseBody) SetError(err error) {
 		b.Error = err
 	}
 }
+
+func SetSuccess(IUnifiedResponse IUnifiedResponse, message string) {
+	IUnifiedResponse.SetSuccess(message)
+}
+
+func SetInvalid(IUnifiedResponse IUnifiedResponse, message string, details InvalidItem) {
+	IUnifiedResponse.SetInvalid(message, details)
+}
+
+func SetError(IUnifiedResponse IUnifiedResponse, err error) {
+	IUnifiedResponse.SetError(err)
+}
