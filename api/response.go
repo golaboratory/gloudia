@@ -58,14 +58,14 @@ func (b *UnifiedResponseBody) SetError(err error) {
 	}
 }
 
-func SetSuccess(IUnifiedResponse IUnifiedResponse, message string) {
-	IUnifiedResponse.SetSuccess(message)
+func SetSuccess(resp *UnifiedResponseBody, message string) {
+	resp.SetSuccess(message)
 }
 
-func SetInvalid(IUnifiedResponse IUnifiedResponse, message string, details InvalidItem) {
-	IUnifiedResponse.SetInvalid(message, details)
+func SetInvalid(resp *UnifiedResponseBody, message string, details InvalidItem) {
+	resp.SetInvalid(message, details)
 }
 
-func SetError(IUnifiedResponse IUnifiedResponse, err error) {
-	IUnifiedResponse.SetError(err)
+func SetError(resp *UnifiedResponseBody, err error) {
+	resp.SetError(err)
 }
