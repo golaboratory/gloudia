@@ -1,0 +1,64 @@
+# If you prefer the allow list template instead of the deny list, see community template:
+# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+#
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.txt
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Environment files and secrets
+# 公開リポジトリへ資格情報を誤ってコミットしないための拒否リスト。
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+credentials
+credentials.*
+secrets.*
+*.tfvars
+
+# Output of the go command
+bin/
+out/
+
+# AI アシスタント向けのローカル設定
+# settings.local.json はローカル専用（各開発者の環境固有パスを含む）。
+.claude/
+.gemini/
+
+# 内部ドキュメント
+# 開発メモ・移行手順・レビュー結果など、公開リポジトリに含めない資料の置き場。
+# 公開する README.md / LICENSE / SECURITY.md / CONTRIBUTING.md はリポジトリ直下に置く。
+_docs/
