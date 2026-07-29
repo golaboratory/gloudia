@@ -1,0 +1,30 @@
+# 既定はテキストとして扱い、リポジトリ内では LF に正規化する。
+* text=auto eol=lf
+
+# Go のツールチェーンは LF を前提とする。
+*.go text eol=lf
+*.mod text eol=lf
+*.sum text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Windows 用スクリプトは CRLF を維持する。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# バイナリ（差分・改行変換の対象外）
+*.xlsx binary
+*.xls binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+
+# GitHub の言語統計から除外する
+_testdata/** linguist-vendored

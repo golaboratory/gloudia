@@ -1,0 +1,126 @@
+package realtime
+
+import (
+	"log/slog"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+const (
+	// ピアへの書き込み待ち時間
+	writeWait = 10 * time.Second
+
+	// ピアからのPong待ち時間
+	pongWait = 60 * time.Second
+
+	// ピアへのPing送信間隔 (pongWaitより短くする必要がある)
+	pingPeriod = (pongWait * 9) / 10
+
+	// 最大メッセージサイズ
+	maxMessageSize = 512
+)
+
+// Client は接続中のユーザーとHubの仲介役です。
+type Client struct {
+	hub *Hub
+
+	// WebSocket接続
+	conn *websocket.Conn
+
+	// メッセージ送信バッファ
+	send chan []byte
+
+	// 認証情報 (誰の接続か)
+	userID   int64
+	tenantID string
+
+	// 認証トークンの有効期限。接続確立後もこの時刻で接続を強制終了させる。
+	// ゼロ値の場合は有効期限による強制終了を行わない。
+	tokenExpiry time.Time
+}
+
+// readDeadline は次の読み取りデッドラインを返します。
+// 通常は pongWait 後ですが、トークン有効期限がそれより早い場合は有効期限を返し、
+// トークン失効後に接続が維持され続けないようにします。
+func (c *Client) readDeadline() time.Time {
+	d := time.Now().Add(pongWait)
+	if !c.tokenExpiry.IsZero() && c.tokenExpiry.Before(d) {
+		return c.tokenExpiry
+	}
+	return d
+}
+
+// readPump はWebSocketからの読み込みを処理します。
+// 主にPing/Pongの維持や、クライアントからのメッセージ受信（今回は受信要件が薄いため省略可）を行います。
+func (c *Client) readPump() {
+	defer func() {
+		c.hub.unregister <- c
+		c.conn.Close()
+	}()
+
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(c.readDeadline())
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(c.readDeadline())
+		return nil
+	})
+
+	for {
+		_, _, err := c.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				slog.Warn("WebSocket error", "error", err)
+			}
+			break
+		}
+		// クライアントからのメッセージ受信は現在未使用（サーバー→クライアントのプッシュのみ）
+	}
+}
+
+// writePump はHubから送られてきたメッセージをWebSocketへ書き込みます。
+func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// Hubがチャネルを閉じた（切断要求）
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			// gorilla/websocket の writer は個々の Write のエラーを内部に保持し、
+			// 直後の w.Close() で返す。そのため Write 単体のエラー確認は不要。
+			w.Write(message) //nolint:errcheck // error is surfaced by w.Close() below
+
+			// 溜まっているメッセージがあれば一度に送る
+			n := len(c.send)
+			for i := 0; i < n; i++ {
+				w.Write([]byte{'\n'}) //nolint:errcheck // error is surfaced by w.Close() below
+				w.Write(<-c.send)     //nolint:errcheck // error is surfaced by w.Close() below
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+
+		case <-ticker.C:
+			// Ping送信
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}

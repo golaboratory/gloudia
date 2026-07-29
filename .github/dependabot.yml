@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    groups:
+      # 関連モジュールをまとめて 1 PR にし、レビュー負荷を下げる。
+      aws-sdk:
+        patterns: ['github.com/aws/*']
+      opentelemetry:
+        patterns: ['go.opentelemetry.io/*']
+      golang-x:
+        patterns: ['golang.org/x/*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions

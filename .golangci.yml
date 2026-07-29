@@ -1,0 +1,68 @@
+version: "2"
+
+# golangci-lint v2 系の設定。
+# CI (.github/workflows/ci.yml) の Lint ジョブが同じ設定で実行します。
+#
+# 方針: 既定のリンター (errcheck / govet / ineffassign / staticcheck / unused) を
+# 有効にしたうえで、「対応しても価値が薄い」あるいは「別途対応予定」のものだけを
+# 理由付きで除外します。除外は網羅的に列挙し、暗黙に緩めないようにします。
+
+linters:
+  default: standard
+
+  settings:
+    errcheck:
+      # 戻り値のエラーを確認しなくても実害がない fire-and-forget 呼び出し。
+      # いずれも失敗しても回復手段がなく、呼び出し側で対処できないもの。
+      exclude-functions:
+        # クローズ時のエラーは読み取り専用パスでは無害（書き込みパスは個別に確認している）
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (io.ReadCloser).Close
+        # WebSocket のデッドライン設定・送信。接続が死んでいれば後続の
+        # 読み書きで検出されるため、ここでの個別処理は冗長。
+        - (*github.com/gorilla/websocket.Conn).Close
+        - (*github.com/gorilla/websocket.Conn).SetReadDeadline
+        - (*github.com/gorilla/websocket.Conn).SetWriteDeadline
+        - (*github.com/gorilla/websocket.Conn).WriteMessage
+        # HTTP レスポンスへの書き込み。失敗してもクライアントは切断済み。
+        - (net/http.ResponseWriter).Write
+        - (*encoding/json.Encoder).Encode
+
+    staticcheck:
+      checks:
+        - all
+        # SA1019 (deprecated API) を全体では無効にしない。
+        # storage/sakura.go の aws-sdk-go-v2 の非推奨 API については
+        # 下の exclusions で当該ファイルのみ除外している。
+
+  exclusions:
+    # golangci-lint 組み込みの妥当な除外セット
+    presets:
+      - comments
+      - std-error-handling
+
+    rules:
+      # テストコードの errcheck は除外する。テストヘルパーの Close や
+      # 後始末の失敗はテスト自体の失敗として顕在化するため。
+      - path: _test\.go
+        linters:
+          - errcheck
+
+      # aws-sdk-go-v2 の非推奨 API。
+      # manager.Uploader → feature/s3/transfermanager への移行、および
+      # EndpointResolverWithOptions → サービス個別のエンドポイント解決への
+      # 移行は破壊的変更を伴うため、別バージョンで対応する。
+      - path: storage/sakura\.go
+        text: 'SA1019'
+        linters:
+          - staticcheck
+
+formatters:
+  enable:
+    - gofmt
+
+issues:
+  # 既存コードへの導入時に取りこぼさないよう、件数上限を外す。
+  max-issues-per-linter: 0
+  max-same-issues: 0
