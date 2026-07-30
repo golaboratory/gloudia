@@ -18,10 +18,11 @@ func TestGetEra(t *testing.T) {
 		{time.Date(1989, 1, 8, 0, 0, 0, 0, time.UTC), 4, false},     // 平成開始日
 		{time.Date(2019, 4, 30, 23, 59, 59, 0, time.UTC), 4, false}, // 平成最終日
 		{time.Date(2019, 5, 1, 0, 0, 0, 0, time.UTC), 5, false},     // 令和開始日
-		{time.Date(2049, 12, 31, 0, 0, 0, 0, time.UTC), 5, false},   // サポート最大日
-		{time.Date(2050, 1, 22, 23, 59, 59, 0, time.UTC), 5, false}, // サポート最大日
+		{time.Date(2049, 12, 31, 0, 0, 0, 0, time.UTC), 5, false},
+		{time.Date(2050, 1, 22, 23, 59, 59, 0, time.UTC), 5, false}, // サポート最大日 (旧暦2049年大晦日)
 		// 境界値外
 		{time.Date(1959, 12, 31, 0, 0, 0, 0, time.UTC), 0, true},
+		{time.Date(2050, 1, 23, 0, 0, 0, 0, time.UTC), 0, true}, // サポート最大日の翌日
 		{time.Date(2200, 1, 23, 0, 0, 0, 0, time.UTC), 0, true},
 		{time.Date(1800, 1, 1, 0, 0, 0, 0, time.UTC), 0, true},
 		{time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC), 0, true},
@@ -160,10 +161,15 @@ func TestGetYear(t *testing.T) {
 	}
 	tests := []testCase{
 		{time.Date(1960, 1, 28, 0, 0, 0, 0, time.UTC), 3, 35, false},
-		{time.Date(1989, 1, 7, 0, 0, 0, 0, time.UTC), 3, 64, false},
-		{time.Date(1989, 1, 8, 0, 0, 0, 0, time.UTC), 4, 1, false},
+		// 1989-01-07 (昭和最終日) は旧暦では 1988 年 (昭和63年) 12月に属する
+		{time.Date(1989, 1, 7, 0, 0, 0, 0, time.UTC), 3, 63, false},
+		// 1989-01-08 (平成開始日) も旧暦では 1988 年に属するため、平成 0 年
+		// (= 昭和 63 年相当) となる。.NET の JapaneseLunisolarCalendar と同じ挙動。
+		{time.Date(1989, 1, 8, 0, 0, 0, 0, time.UTC), 4, 0, false},
 		{time.Date(2019, 4, 30, 0, 0, 0, 0, time.UTC), 4, 31, false},
 		{time.Date(2019, 5, 1, 0, 0, 0, 0, time.UTC), 5, 1, false},
+		// 2020-01-20 は旧正月 (2020-01-25) より前なので旧暦 2019 年 = 令和元年
+		{time.Date(2020, 1, 20, 0, 0, 0, 0, time.UTC), 5, 1, false},
 		{time.Date(2049, 12, 31, 0, 0, 0, 0, time.UTC), 5, 31, false},
 		// 境界値外
 		{time.Date(1959, 12, 31, 0, 0, 0, 0, time.UTC), 0, 0, true},
@@ -177,6 +183,38 @@ func TestGetYear(t *testing.T) {
 		}
 		if err == nil && got != tt.want {
 			t.Errorf("GetYear(%v) = %d, want %d", tt.date, got, tt.want)
+		}
+	}
+}
+
+// TestGetYear_RoundTripsWithToDateTime は GetYear/GetMonth/GetDayOfMonth の組が
+// ToDateTime で元の日付に戻ること (旧暦年ベースの一貫性) を検証する。
+func TestGetYear_RoundTripsWithToDateTime(t *testing.T) {
+	c := NewJapaneseLunisolarCalendar()
+	dates := []time.Time{
+		time.Date(1960, 1, 28, 0, 0, 0, 0, time.UTC),
+		time.Date(1989, 1, 8, 0, 0, 0, 0, time.UTC),  // 改元直後・旧正月前
+		time.Date(2020, 1, 20, 0, 0, 0, 0, time.UTC), // 年初・旧正月前
+		time.Date(2019, 5, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2024, 7, 30, 0, 0, 0, 0, time.UTC),
+		time.Date(2050, 1, 22, 0, 0, 0, 0, time.UTC), // サポート最大日
+	}
+	for _, d := range dates {
+		year, err1 := c.GetYear(d)
+		month, err2 := c.GetMonth(d)
+		day, err3 := c.GetDayOfMonth(d)
+		era, err4 := c.GetEra(d)
+		if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+			t.Errorf("%v: unexpected error: %v %v %v %v", d, err1, err2, err3, err4)
+			continue
+		}
+		back, err := c.ToDateTime(year, month, day, era)
+		if err != nil {
+			t.Errorf("ToDateTime(%d, %d, %d, %d) unexpected error: %v", year, month, day, era, err)
+			continue
+		}
+		if !back.Equal(d) {
+			t.Errorf("round trip failed: %v -> (%d, %d, %d, era=%d) -> %v", d, year, month, day, era, back)
 		}
 	}
 }
@@ -208,22 +246,38 @@ func TestGetMonth(t *testing.T) {
 	}
 }
 
-func TestGetMonth_TableGapDatesReturnError(t *testing.T) {
+// TestGetMonth_SupportBoundary はサポート範囲の上限 (旧暦 2049 年大晦日 = 2050-01-22)
+// の前後で正しく成功/失敗が切り替わることを検証する。
+// かつて存在した 2050〜2100 年の暦テーブル拡張は、閏月の欠落等を含む誤データで
+// あったため削除された (詳細は lunisolar.go の注記を参照)。
+func TestGetMonth_SupportBoundary(t *testing.T) {
 	c := NewJapaneseLunisolarCalendar()
-	// yearInfo テーブルの不整合 (約30日のギャップ) に該当する日付。
-	// 修正前は存在しない「14月」を nil エラーで返していた。
-	// 修正後はサポート範囲外エラーを返し、不正な月を返さないことを検証する。
-	gapDates := []time.Time{
-		time.Date(2083, 2, 16, 0, 0, 0, 0, time.UTC),
-		time.Date(2091, 2, 17, 0, 0, 0, 0, time.UTC),
+
+	// 2050-01-22 = 旧暦 2049年12月29日 (サポート最終日)
+	month, err := c.GetMonth(time.Date(2050, 1, 22, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("GetMonth(2050-01-22) unexpected error: %v", err)
 	}
-	for _, d := range gapDates {
-		month, err := c.GetMonth(d)
-		if err == nil {
-			t.Errorf("GetMonth(%v) = %d, want error (table gap)", d, month)
-		}
-		if month > 13 {
-			t.Errorf("GetMonth(%v) returned impossible month %d", d, month)
+	if month != 12 {
+		t.Errorf("GetMonth(2050-01-22) = %d, want 12", month)
+	}
+	day, err := c.GetDayOfMonth(time.Date(2050, 1, 22, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("GetDayOfMonth(2050-01-22) unexpected error: %v", err)
+	}
+	if day != 29 {
+		t.Errorf("GetDayOfMonth(2050-01-22) = %d, want 29", day)
+	}
+
+	// 翌日以降は範囲外エラー
+	outOfRange := []time.Time{
+		time.Date(2050, 1, 23, 0, 0, 0, 0, time.UTC),
+		time.Date(2060, 6, 15, 0, 0, 0, 0, time.UTC),
+		time.Date(2100, 2, 9, 0, 0, 0, 0, time.UTC),
+	}
+	for _, d := range outOfRange {
+		if _, err := c.GetMonth(d); err == nil {
+			t.Errorf("GetMonth(%v) expected out-of-range error, got nil", d)
 		}
 	}
 }
@@ -311,6 +365,10 @@ func TestToDateTime(t *testing.T) {
 		{1, 1, 1, 0, time.Time{}, true},
 		{1, 14, 1, 3, time.Time{}, true},
 		{1, 1, 32, 3, time.Time{}, true},
+		// 年は範囲内だが月・日が不正なケース (令和2年 = 旧暦2020年は閏4月あり13ヶ月、1月は30日)
+		{2, 14, 1, 5, time.Time{}, true},
+		{2, 1, 31, 5, time.Time{}, true},
+		{2, 1, 0, 5, time.Time{}, true},
 	}
 	for _, tt := range tests {
 		got, err := c.ToDateTime(tt.eraYear, tt.month, tt.day, tt.eraID)
@@ -342,6 +400,8 @@ func TestGetLeapMonth(t *testing.T) {
 		{2006, 7, false},  // 閏月あり
 		{2014, 9, false},  // 閏月あり
 		{2023, 2, false},  // 閏月あり
+		{2025, 6, false},  // 閏月あり (閏6月)
+		{2033, 11, false}, // 閏月あり (いわゆる旧暦2033年問題の年。閏11月を採用)
 		{2044, 7, false},  // 閏月あり
 		{1962, 0, false},  // 閏月なし
 		{2049, 0, false},  // 閏月なし
@@ -363,153 +423,111 @@ func TestGetLeapMonth(t *testing.T) {
 	}
 }
 
-func TestJapaneseLunisolarCalendar_ExtendedRange(t *testing.T) {
+// TestGregorianToLunar_KnownDates は公表されている旧暦日付との一致を検証する
+// (旧正月・閏月境界などの実データアンカー)。
+func TestGregorianToLunar_KnownDates(t *testing.T) {
 	c := NewJapaneseLunisolarCalendar()
 
 	tests := []struct {
-		name        string
-		gregorian   time.Time
-		lunarYear   int
-		lunarMonth  int
-		lunarDay    int
-		expectError bool
+		name       string
+		gregorian  time.Time
+		lunarYear  int
+		lunarMonth int // 年初からの通し番号
+		lunarDay   int
 	}{
-		// 既存の範囲境界付近
-		{
-			name:       "2049 New Year",
-			gregorian:  time.Date(2049, 2, 2, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2049,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		// 拡張された範囲 (2050年以降)
-		{
-			name:       "2050 New Year",
-			gregorian:  time.Date(2050, 1, 23, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2050,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		{
-			name:       "2060 New Year",
-			gregorian:  time.Date(2060, 2, 2, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2060,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		{
-			name:       "2070 New Year",
-			gregorian:  time.Date(2070, 2, 11, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2070,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		{
-			name:       "2080 New Year",
-			gregorian:  time.Date(2080, 1, 22, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2080,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		{
-			name:       "2090 New Year",
-			gregorian:  time.Date(2090, 1, 30, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2090,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		{
-			name:       "2100 New Year",
-			gregorian:  time.Date(2100, 2, 9, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2100,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		// 閏月のある年のテスト (2052年は閏8月がある)
-		{
-			name:       "2052 Leap Month Start",
-			gregorian:  time.Date(2052, 2, 1, 0, 0, 0, 0, time.UTC),
-			lunarYear:  2052,
-			lunarMonth: 1,
-			lunarDay:   1,
-		},
-		// 範囲外エラーチェック
-		{
-			name:        "2101 Out of Range",
-			gregorian:   time.Date(2101, 1, 29, 0, 0, 0, 0, time.UTC),
-			expectError: true,
-		},
+		{"1960 旧正月", time.Date(1960, 1, 28, 0, 0, 0, 0, time.UTC), 1960, 1, 1},
+		{"2024 旧正月", time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), 2024, 1, 1},
+		{"2025 旧正月", time.Date(2025, 1, 29, 0, 0, 0, 0, time.UTC), 2025, 1, 1},
+		{"2025 閏6月朔日 (通し7月)", time.Date(2025, 7, 25, 0, 0, 0, 0, time.UTC), 2025, 7, 1},
+		{"2033 旧正月 (閏11月の年)", time.Date(2033, 1, 31, 0, 0, 0, 0, time.UTC), 2033, 1, 1},
+		{"2049 旧正月", time.Date(2049, 2, 2, 0, 0, 0, 0, time.UTC), 2049, 1, 1},
+		{"サポート最終日", time.Date(2050, 1, 22, 0, 0, 0, 0, time.UTC), 2049, 12, 29},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Gregorian -> Lunar
 			ly, lm, ld, err := c.gregorianToLunar(tt.gregorian)
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("expected error but got none")
-				}
-				return
-			}
 			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-				return
+				t.Fatalf("unexpected error: %v", err)
 			}
-
 			if ly != tt.lunarYear || lm != tt.lunarMonth || ld != tt.lunarDay {
-				t.Errorf("GregorianToLunar(%v) = %d/%d/%d, want %d/%d/%d",
+				t.Errorf("gregorianToLunar(%v) = %d/%d/%d, want %d/%d/%d",
 					tt.gregorian, ly, lm, ld, tt.lunarYear, tt.lunarMonth, tt.lunarDay)
 			}
 
-			// Lunar -> Gregorian (Round trip check)
+			// 逆変換のラウンドトリップ
 			gDate, err := c.lunarToGregorian(tt.lunarYear, tt.lunarMonth, tt.lunarDay)
 			if err != nil {
-				t.Errorf("lunarToGregorian failed: %v", err)
-				return
+				t.Fatalf("lunarToGregorian failed: %v", err)
 			}
 			if !gDate.Equal(tt.gregorian) {
-				t.Errorf("LunarToGregorian(%d/%d/%d) = %v, want %v",
+				t.Errorf("lunarToGregorian(%d/%d/%d) = %v, want %v",
 					tt.lunarYear, tt.lunarMonth, tt.lunarDay, gDate, tt.gregorian)
 			}
 		})
 	}
 }
 
-func TestJapaneseLunisolarCalendar_LeapMonths_Extended(t *testing.T) {
+// TestGetLunarDate は伝統的な月番号と閏月フラグへの変換を検証する。
+// 2025 年は閏6月がある (通し番号 7 が閏6月)。
+func TestGetLunarDate(t *testing.T) {
 	c := NewJapaneseLunisolarCalendar()
 
-	// 2050年以降で閏月がある年のチェック
-	leapYears := map[int]int{
-		2052: 8,
-		2055: 6,
-		2058: 0, // データ上は0 (閏月なし) に見えるが、ビットマスク確認が必要
-		2061: 3,
-		2063: 7,
-		2066: 5,
-		2071: 5,
-		2074: 4,
-		2076: 8,
-		2080: 6,
-		2084: 10,
-		2088: 5,
-		2093: 3,
-		2096: 5,
-		2099: 4,
+	tests := []struct {
+		name        string
+		gregorian   time.Time
+		year        int
+		month       int
+		day         int
+		isLeapMonth bool
+	}{
+		{"閏月のない月", time.Date(2024, 2, 10, 0, 0, 0, 0, time.UTC), 2024, 1, 1, false},
+		{"閏月直前 (6月30日)", time.Date(2025, 7, 24, 0, 0, 0, 0, time.UTC), 2025, 6, 30, false},
+		{"閏6月朔日", time.Date(2025, 7, 25, 0, 0, 0, 0, time.UTC), 2025, 6, 1, true},
+		{"閏6月の翌月 (7月1日)", time.Date(2025, 8, 23, 0, 0, 0, 0, time.UTC), 2025, 7, 1, false},
 	}
 
-	for year, expectedLeapMonth := range leapYears {
-		leapMonth, err := c.GetLeapMonth(year)
-		if err != nil {
-			t.Errorf("GetLeapMonth(%d) error: %v", year, err)
-			continue
-		}
-		// 注: yearInfoの定義によっては0の場合もあるため、
-		// ここではエラーが出ないことと、定義済みの値と一致することを確認
-		// 実際のyearInfoテーブルの値と照らし合わせる
-		if expectedLeapMonth != 0 && leapMonth != expectedLeapMonth {
-			// yearInfoのデータとテスト期待値が一致しているか確認用
-			// 実際のデータ定義: {8, 2, 1, ...} // 2052 -> 閏8月
-			t.Errorf("Year %d: expected leap month %d, got %d", year, expectedLeapMonth, leapMonth)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			year, month, day, isLeap, err := c.GetLunarDate(tt.gregorian)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if year != tt.year || month != tt.month || day != tt.day || isLeap != tt.isLeapMonth {
+				t.Errorf("GetLunarDate(%v) = (%d, %d, %d, %v), want (%d, %d, %d, %v)",
+					tt.gregorian, year, month, day, isLeap, tt.year, tt.month, tt.day, tt.isLeapMonth)
+			}
+		})
+	}
+}
+
+// TestWallClockDateInterpretation は JST など UTC 以外のロケーションの time.Time が
+// 壁時計上の日付として解釈されることを検証する。
+func TestWallClockDateInterpretation(t *testing.T) {
+	c := NewJapaneseLunisolarCalendar()
+	jst := time.FixedZone("JST", 9*60*60)
+
+	// 2019-05-01 00:00 JST は UTC の瞬間では 2019-04-30 だが、日付として令和と判定されるべき
+	era, err := c.GetEra(time.Date(2019, 5, 1, 0, 0, 0, 0, jst))
+	if err != nil {
+		t.Fatalf("GetEra(2019-05-01 JST) unexpected error: %v", err)
+	}
+	if era != 5 {
+		t.Errorf("GetEra(2019-05-01 00:00 JST) = %d, want 5 (令和)", era)
+	}
+
+	// サポート最小日の 0 時 (JST) も日付として範囲内であるべき
+	month, err := c.GetMonth(time.Date(1960, 1, 28, 0, 0, 0, 0, jst))
+	if err != nil {
+		t.Fatalf("GetMonth(1960-01-28 JST) unexpected error: %v", err)
+	}
+	if month != 1 {
+		t.Errorf("GetMonth(1960-01-28 00:00 JST) = %d, want 1", month)
+	}
+
+	// UTC-11 のような西側のロケーションでも壁時計日付で解釈されるべき
+	west := time.FixedZone("SST", -11*60*60)
+	if _, err := c.GetMonth(time.Date(2050, 1, 23, 0, 0, 0, 0, west)); err == nil {
+		t.Error("GetMonth(2050-01-23 00:00 UTC-11) expected out-of-range error, got nil")
 	}
 }

@@ -1,7 +1,10 @@
 // このファイルの太陰太陽暦（旧暦）変換ロジックおよび yearInfo テーブルは、
 // .NET (dotnet/runtime) の System.Globalization.JapaneseLunisolarCalendar /
 // EastAsianLunisolarCalendar の実装（内部テーブル s_yinfo）を参考に、
-// Go へ移植したものです。
+// Go へ移植したものです。yearInfo の 1960〜2049 年の全行が .NET の s_yinfo と
+// 一致することを機械的に照合済みです。s_yinfo の暦データ自体の出典は
+// Reingold & Dershowitz "Calendrical Calculations" および
+// 西沢優荘『暦日大鑑』（新人物往来社, 1994）です。
 //
 // 参考元:
 //
@@ -32,22 +35,28 @@ var (
 	ErrInternalEraNotFound = ergo.NewSentinel("internal error: era not found")
 	// ErrInvalidMonth は指定された月が年の月数範囲外の場合のエラーです。
 	ErrInvalidMonth = ergo.NewSentinel("invalid month for year")
+	// ErrInvalidDay は指定された日が月の日数範囲外の場合のエラーです。
+	ErrInvalidDay = ergo.NewSentinel("invalid day for month")
 	// ErrInvalidEra は無効な元号IDが指定された場合のエラーです。
 	ErrInvalidEra = ergo.NewSentinel("invalid era")
 )
 
 // --- 定数とグローバル変数 ---
 
-// サポートする和暦（太陰太陽暦）の年範囲
+// サポートする和暦（太陰太陽暦）の年範囲。
+// 上限の 2049 は出典である .NET の s_yinfo テーブルの範囲に一致します。
+// （かつて存在した 2050〜2100 年の拡張データは出典がなく、閏月の欠落や
+// 旧正月日付の連鎖矛盾を含む誤データであることが確認されたため削除しました。）
 const (
 	minLunisolarYear = 1960
-	maxLunisolarYear = 2100
+	maxLunisolarYear = 2049
 )
 
-// サポートするグレゴリオ暦の日付範囲
+// サポートするグレゴリオ暦の日付範囲。
+// 太陰太陽暦 1960 年の元日（1960-01-28）から 2049 年の大晦日（2050-01-22）まで。
 var (
 	minSupportedDate = time.Date(1960, 1, 28, 0, 0, 0, 0, time.UTC)
-	maxSupportedDate = time.Date(2101, 1, 28, 23, 59, 59, 999999999, time.UTC)
+	maxSupportedDate = time.Date(2050, 1, 22, 23, 59, 59, 999999999, time.UTC)
 )
 
 // グレゴリオ暦の閏年判定
@@ -63,15 +72,10 @@ func daysInGregorianYear(year int) int {
 	return 365
 }
 
-// グレゴリオ暦の月までの通算日数
-//var (
-//	daysToMonth365 = []int{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334}
-//	daysToMonth366 = []int{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}
-//)
-
 // yearInfo は .NET の EastAsianLunisolarCalendar 内部テーブル s_yinfo に対応します
 // （出典はファイル冒頭の注記を参照）。
 // 各行のデータ: [閏月(なければ0), 正月月, 正日, 各月の日数パターン(ビットマスク)]
+// 日数パターンは最上位ビットから第1月・第2月…の順に、1 なら 30 日・0 なら 29 日を表します。
 var yearInfo = [][4]int{
 	{6, 1, 28, 0b1010110101010000},  // 1960
 	{0, 2, 15, 0b1010101101010000},  // 1961
@@ -163,68 +167,17 @@ var yearInfo = [][4]int{
 	{5, 1, 26, 0b1011010100101000},  // 2047
 	{0, 2, 14, 0b0110110101000000},  // 2048
 	{0, 2, 2, 0b1010110110100000},   // 2049
-	{3, 1, 23, 0b1110010101010000},  // 2050
-	{0, 2, 11, 0b1001011011010000},  // 2051
-	{8, 2, 1, 0b0100101011101000},   // 2052
-	{0, 2, 19, 0b0100101011100000},  // 2053
-	{0, 2, 8, 0b1010010011010000},   // 2054
-	{6, 1, 28, 0b1101001001101000},  // 2055
-	{0, 2, 15, 0b1101001001010000},  // 2056
-	{0, 2, 4, 0b1101010100100000},   // 2057
-	{0, 1, 24, 0b1101101010100000},  // 2058
-	{0, 2, 12, 0b1011011010100000},  // 2059
-	{0, 2, 2, 0b1001011011010000},   // 2060
-	{3, 1, 21, 0b0100101011011000},  // 2061
-	{0, 2, 9, 0b0100100110110000},   // 2062
-	{7, 1, 29, 0b1010010010111000},  // 2063
-	{0, 2, 17, 0b1010010010110000},  // 2064
-	{0, 2, 5, 0b1011001001010000},   // 2065
-	{5, 1, 26, 0b1011010100101000},  // 2066
-	{0, 2, 14, 0b0110110101000000},  // 2067
-	{0, 2, 3, 0b1010110110100000},   // 2068
-	{0, 1, 23, 0b1001010110110000},  // 2069
-	{0, 2, 11, 0b0100100110110000},  // 2070
-	{5, 1, 31, 0b0110010010111000},  // 2071
-	{0, 2, 19, 0b0110010010110000},  // 2072
-	{0, 2, 7, 0b1101010010100000},   // 2073
-	{4, 1, 27, 0b1110101001010000},  // 2074
-	{0, 2, 15, 0b0110110101000000},  // 2075
-	{8, 2, 5, 0b0101101011010000},   // 2076
-	{0, 2, 23, 0b0010101101100000},  // 2077
-	{0, 2, 12, 0b1001001101110000},  // 2078
-	{0, 2, 2, 0b1001001011100000},   // 2079
-	{6, 1, 22, 0b1100100101101000},  // 2080
-	{0, 2, 9, 0b1100100101010000},   // 2081
-	{0, 1, 29, 0b1101010010100000},  // 2082
-	{0, 2, 17, 0b1101101001010000},  // 2083
-	{10, 2, 6, 0b0101101010101000},  // 2084
-	{0, 2, 24, 0b0101011011000000},  // 2085
-	{0, 2, 13, 0b1010101011010000},  // 2086
-	{0, 2, 3, 0b0010010111010000},   // 2087
-	{5, 1, 24, 0b1001001011011000},  // 2088
-	{0, 2, 10, 0b1100100101010000},  // 2089
-	{0, 1, 30, 0b1010100101010000},  // 2090
-	{0, 2, 18, 0b1011010010100000},  // 2091
-	{0, 2, 7, 0b1011010101010000},   // 2092
-	{3, 1, 27, 0b0101010110101000},  // 2093
-	{0, 2, 15, 0b0100101110100000},  // 2094
-	{0, 2, 5, 0b1010010110110000},   // 2095
-	{5, 1, 25, 0b0101001010111000},  // 2096
-	{0, 2, 12, 0b0101001010110000},  // 2097
-	{0, 2, 1, 0b1010100101010000},   // 2098
-	{4, 1, 21, 0b1011010010101000},  // 2099
-	{0, 2, 9, 0b0110101010100000},   // 2100
 }
 
 // --- 構造体定義 ---
 
-// EraInfo は元号の情報を保持します
+// EraInfo は元号の情報を保持します。
 type EraInfo struct {
-	Era         int
-	Name        string
-	EnglishName string
-	StartDate   time.Time
-	YearOffset  int // グレゴリオ暦年から元号年を引いた値 (例: 令和 2019 - 1 = 2018)
+	Era         int       // 元号ID (昭和=3, 平成=4, 令和=5。.NET の JapaneseCalendar と同じ番号)
+	Name        string    // 元号名 (例: "令和")
+	EnglishName string    // 元号の英語名 (例: "Reiwa")
+	StartDate   time.Time // 元号の開始日 (UTC 0時)
+	YearOffset  int       // グレゴリオ暦年から元号年を引いた値 (例: 令和 2019 - 1 = 2018)
 }
 
 // JapaneseLunisolarCalendar は和暦（太陰太陽暦）の機能を提供します
@@ -248,8 +201,18 @@ func NewJapaneseLunisolarCalendar() *JapaneseLunisolarCalendar {
 
 // --- 内部ヘルパー関数 ---
 
+// toUTCDate は t の壁時計上の日付（年月日）を UTC の 0 時として取り出します。
+// 本パッケージの暦計算は時刻やタイムゾーンではなく「日付」に対して定義されるため、
+// JST など任意のロケーションの time.Time をそのまま渡しても、その場所での
+// 日付として解釈されます。
+func toUTCDate(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+}
+
 func (c *JapaneseLunisolarCalendar) checkDateRange(t time.Time) error {
-	if t.Before(minSupportedDate) || t.After(maxSupportedDate) {
+	d := toUTCDate(t)
+	if d.Before(minSupportedDate) || d.After(maxSupportedDate) {
 		return ergo.Wrap(ErrOutOfSupportedRange, fmt.Sprintf("date=%v, min=%v, max=%v", t, minSupportedDate, maxSupportedDate))
 	}
 	return nil
@@ -270,7 +233,10 @@ func (c *JapaneseLunisolarCalendar) getYearInfo(lunarYear int, index int) (int, 
 	return yearInfo[lunarYear-minLunisolarYear][index], nil
 }
 
-// GetYearInfo は指定した年・インデックスの太陰太陽暦情報を返します（テスト用公開ラッパー）
+// GetYearInfo は指定した旧暦年の暦情報を返します。index の意味は次のとおりです:
+// 0=閏月（なければ 0。閏6月なら 6）、1=旧正月の月、2=旧正月の日、
+// 3=各月の日数パターン（最上位ビットから第1月・第2月…の順に 1=30日/0=29日の16ビット値）。
+// 範囲外の年には ErrOutOfLunisolarRange をラップしたエラーを返します。
 func (c *JapaneseLunisolarCalendar) GetYearInfo(lunarYear int, index int) (int, error) {
 	return c.getYearInfo(lunarYear, index)
 }
@@ -300,25 +266,44 @@ func (c *JapaneseLunisolarCalendar) gregorianToLunar(t time.Time) (lunarYear, lu
 	dayOfYear := t.YearDay()
 
 	lunarYear = solarYear
-	jan1Month, _ := c.getYearInfo(lunarYear, 1)
-	jan1Date, _ := c.getYearInfo(lunarYear, 2)
-
-	// 指定日が旧暦の前年に属するか判定
-	if solarYear == lunarYear && (solarMonth < time.Month(jan1Month) || (solarMonth == time.Month(jan1Month) && solarDate < jan1Date)) {
+	if lunarYear == maxLunisolarYear+1 {
+		// サポート最終旧暦年の年末はグレゴリオ暦の翌年 1 月にかかる
+		// (旧暦 2049 年の大晦日 = 2050-01-22)。範囲チェック済みのこの日付は
+		// 必ず前の旧暦年に属する (.NET の実装と同じ特例処理)。
 		lunarYear--
 		dayOfYear += daysInGregorianYear(lunarYear)
+	} else {
+		jan1Month, jErr := c.getYearInfo(lunarYear, 1)
+		if jErr != nil {
+			return 0, 0, 0, jErr
+		}
+		jan1Date, jErr := c.getYearInfo(lunarYear, 2)
+		if jErr != nil {
+			return 0, 0, 0, jErr
+		}
+		// 指定日が旧暦の前年に属するか判定
+		if solarMonth < time.Month(jan1Month) || (solarMonth == time.Month(jan1Month) && solarDate < jan1Date) {
+			lunarYear--
+			dayOfYear += daysInGregorianYear(lunarYear)
+		}
 	}
 
 	// 旧暦の元旦からの通算日を計算
-	jan1Month, _ = c.getYearInfo(lunarYear, 1)
-	jan1Date, _ = c.getYearInfo(lunarYear, 2)
+	jan1Month, err := c.getYearInfo(lunarYear, 1)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	jan1Date, err := c.getYearInfo(lunarYear, 2)
+	if err != nil {
+		return 0, 0, 0, err
+	}
 	lunarDayOfYear := dayOfYear - (time.Date(lunarYear, time.Month(jan1Month), jan1Date, 0, 0, 0, 0, time.UTC).YearDay() - 1)
 
 	// 通算日から月と日を計算
 	// その年の月数 (12 or 13) を上限として走査する。
-	// yearInfo テーブルの不整合 (例: 2082/2090 年付近の約30日のギャップ) により
-	// 通算日が年内日数を超えるケースでは、存在しない月 (14月など) を返さず、
-	// サポート範囲外エラーとして扱う。
+	// 検証済みテーブルでは通算日が年内日数を超えることはないが、万一テーブルが
+	// 破損した場合にも存在しない月 (14月など) を返さないための防御として、
+	// 超過時はサポート範囲外エラーを返す。
 	monthsInYear, err := c.GetMonthsInYear(lunarYear)
 	if err != nil {
 		return 0, 0, 0, err
@@ -340,17 +325,34 @@ func (c *JapaneseLunisolarCalendar) gregorianToLunar(t time.Time) (lunarYear, lu
 		fmt.Sprintf("date=%v could not be mapped within lunar year=%d (months=%d)", t, lunarYear, monthsInYear))
 }
 
-// lunarToGregorian は太陰太陽暦をグレゴリオ暦に変換します
+// lunarToGregorian は太陰太陽暦をグレゴリオ暦に変換します。
+// 月が年の月数を超える場合は ErrInvalidMonth を、日が月の日数を超える場合は
+// ErrInvalidDay をラップしたエラーを返します。
 func (c *JapaneseLunisolarCalendar) lunarToGregorian(lunarYear, lunarMonth, lunarDay int) (time.Time, error) {
 	if err := c.checkLunarYearRange(lunarYear); err != nil {
 		return time.Time{}, err
 	}
 
+	monthsInYear, err := c.GetMonthsInYear(lunarYear)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if lunarMonth < 1 || lunarMonth > monthsInYear {
+		return time.Time{}, ergo.Wrap(ErrInvalidMonth, fmt.Sprintf("month=%d, year=%d", lunarMonth, lunarYear))
+	}
+	daysInMonth, err := c.internalGetDaysInMonth(lunarYear, lunarMonth)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if lunarDay < 1 || lunarDay > daysInMonth {
+		return time.Time{}, ergo.Wrap(ErrInvalidDay, fmt.Sprintf("day=%d, month=%d, year=%d", lunarDay, lunarMonth, lunarYear))
+	}
+
 	// 旧暦の元旦からの通算日数を計算
 	dayOfYear := lunarDay - 1
 	for m := 1; m < lunarMonth; m++ {
-		daysInMonth, _ := c.internalGetDaysInMonth(lunarYear, m)
-		dayOfYear += daysInMonth
+		days, _ := c.internalGetDaysInMonth(lunarYear, m)
+		dayOfYear += days
 	}
 
 	// グレゴリオ暦の旧暦元旦の日付を取得
@@ -365,14 +367,17 @@ func (c *JapaneseLunisolarCalendar) lunarToGregorian(lunarYear, lunarMonth, luna
 
 // --- 公開メソッド ---
 
-// GetEra は指定されたグレゴリオ暦の日付に対応する元号IDを返します
+// GetEra は指定されたグレゴリオ暦の日付に対応する元号IDを返します。
+// 判定は t の壁時計上の日付（タイムゾーンに依存しない年月日）で行います。
+// サポート範囲外の日付には ErrOutOfSupportedRange をラップしたエラーを返します。
 func (c *JapaneseLunisolarCalendar) GetEra(t time.Time) (int, error) {
 	if err := c.checkDateRange(t); err != nil {
 		return 0, err
 	}
 	// erasは新しい順なので、最初に見つかったものが正解
+	d := toUTCDate(t)
 	for _, era := range c.eras {
-		if !t.Before(era.StartDate) {
+		if !d.Before(era.StartDate) {
 			return era.Era, nil
 		}
 	}
@@ -389,7 +394,15 @@ func (c *JapaneseLunisolarCalendar) Eras() []int {
 	return eraNumbers
 }
 
-// GetYear はグレゴリオ暦の日付に対応する和暦（元号年）を返します
+// GetYear はグレゴリオ暦の日付が属する旧暦年を、元号年として返します。
+// 例えば 2020-01-20 は旧暦 2019 年（同年の旧正月 2020-01-25 より前）に属するため、
+// 令和元年として 1 を返します。GetMonth / GetDayOfMonth と組み合わせた値は
+// ToDateTime で元のグレゴリオ暦日付に逆変換できます（.NET の
+// JapaneseLunisolarCalendar.GetYear と同じ規則）。
+//
+// 注意: 元号は t の日付そのもので判定するため、改元日から次の旧正月までの期間
+// （平成改元では 1989-01-08〜1989-02-05）は旧暦年が前の元号に属し、結果が
+// 0 になります（平成 0 年 = 昭和 63 年に相当）。これも .NET と同じ挙動です。
 func (c *JapaneseLunisolarCalendar) GetYear(t time.Time) (int, error) {
 	lunarYear, _, _, err := c.gregorianToLunar(t)
 	if err != nil {
@@ -403,14 +416,17 @@ func (c *JapaneseLunisolarCalendar) GetYear(t time.Time) (int, error) {
 
 	for _, era := range c.eras {
 		if era.Era == eraID {
-			k := t.Year() - lunarYear
-			return lunarYear + k - era.YearOffset, nil
+			return lunarYear - era.YearOffset, nil
 		}
 	}
 	return 0, ErrInternalEraNotFound
 }
 
-// GetMonth はグレゴリオ暦の日付に対応する旧暦の月を返します
+// GetMonth はグレゴリオ暦の日付に対応する旧暦の月を返します。
+// 戻り値は年初からの通し番号（1〜12、閏月のある年は 1〜13）であり、
+// 閏月がある年では閏月以降の値が伝統的な月名と 1 ずれます
+// （例: 閏6月のある年では 7 が「閏6月」を指します）。
+// 伝統的な月番号と閏月フラグが必要な場合は GetLunarDate を使用してください。
 func (c *JapaneseLunisolarCalendar) GetMonth(t time.Time) (int, error) {
 	_, month, _, err := c.gregorianToLunar(t)
 	return month, err
@@ -422,7 +438,28 @@ func (c *JapaneseLunisolarCalendar) GetDayOfMonth(t time.Time) (int, error) {
 	return day, err
 }
 
-// IsLeapYear は指定された年が閏年かどうかを返します
+// GetLunarDate はグレゴリオ暦の日付に対応する旧暦の日付を、伝統的な月番号で返します。
+// month は 1〜12 の伝統的な月番号、isLeapMonth はその月が閏月かどうかを表します
+// （例: 閏6月は month=6, isLeapMonth=true）。year は旧暦年の西暦表記です。
+func (c *JapaneseLunisolarCalendar) GetLunarDate(t time.Time) (year, month, day int, isLeapMonth bool, err error) {
+	year, month, day, err = c.gregorianToLunar(t)
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	leapMonth, err := c.GetLeapMonth(year)
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	if leapMonth > 0 && month > leapMonth {
+		// 閏月の挿入位置以降は通し番号が伝統的な月番号より 1 大きい
+		month--
+		isLeapMonth = month == leapMonth
+	}
+	return year, month, day, isLeapMonth, nil
+}
+
+// IsLeapYear は指定された旧暦年（西暦表記）に閏月があるかどうかを返します。
+// グレゴリオ暦の閏年判定ではない点に注意してください。
 func (c *JapaneseLunisolarCalendar) IsLeapYear(lunarYear int) (bool, error) {
 	leapMonth, err := c.getYearInfo(lunarYear, 0)
 	if err != nil {
@@ -457,7 +494,9 @@ func (c *JapaneseLunisolarCalendar) GetDaysInMonth(lunarYear, lunarMonth int) (i
 	return c.internalGetDaysInMonth(lunarYear, lunarMonth)
 }
 
-// ToDateTime は和暦（元号年、月、日）をグレゴリオ暦の time.Time に変換します
+// ToDateTime は旧暦の和暦表記（元号年、月、日）をグレゴリオ暦の time.Time に変換します。
+// month は GetMonth と同じ年初からの通し番号（1〜12、閏月のある年は 1〜13）です。
+// 戻り値は UTC の 0 時の time.Time です。
 func (c *JapaneseLunisolarCalendar) ToDateTime(eraYear, month, day int, eraID int) (time.Time, error) {
 	var lunarYear int
 	var foundEra bool
@@ -495,22 +534,9 @@ func (c *JapaneseLunisolarCalendar) GetGregorianYear(eraYear, eraID int) (int, e
 	return 0, ergo.Wrap(ErrInvalidEra, fmt.Sprintf("eraID=%d", eraID))
 }
 
-// GetLeapMonth は指定された年（西暦）の閏月を返します。
-// 閏年でない場合は0を返します。
+// GetLeapMonth は指定された旧暦年（西暦表記）の閏月の伝統的な月番号を返します。
+// 閏6月のある年は 6 を返し、閏月のない年は 0 を返します。
+// （.NET の GetLeapMonth が返す「年初からの通し番号」(この例では 7) とは異なります。）
 func (c *JapaneseLunisolarCalendar) GetLeapMonth(lunarYear int) (int, error) {
-	// 指定された年がサポート範囲内か検証
-	if err := c.checkLunarYearRange(lunarYear); err != nil {
-		// エラーの場合は0とエラー情報を返す
-		return 0, err
-	}
-
-	// yearInfoテーブルの0番目の要素（Leap Month情報）を取得
-	leapMonth, err := c.getYearInfo(lunarYear, 0)
-	if err != nil {
-		// これは通常発生しないはずだが、念のため
-		return 0, err
-	}
-
-	// 取得した値をそのまま返す（0の場合は閏月なし）
-	return leapMonth, nil
+	return c.getYearInfo(lunarYear, 0)
 }
