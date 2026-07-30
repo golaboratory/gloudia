@@ -22,7 +22,7 @@
 ## インストール
 
 ```bash
-go get github.com/golaboratory/gloudia@v0.2.0
+go get github.com/golaboratory/gloudia@v0.3.0
 ```
 
 ```go
