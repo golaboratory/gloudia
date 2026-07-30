@@ -12,9 +12,11 @@ import (
 )
 
 var (
-	// IsDebug は後方互換のため公開されています。実際のリクエスト判定には
-	// NewLogger 内でクロージャにキャプチャしたローカル値を使用するため、
-	// この変数をリクエスト処理中に読み取ることはなく、データ競合は発生しません。
+	// IsDebug は後方互換のため公開されています。NewLogger が構築時に一度だけ
+	// 同期なしで書き込みます。リクエスト処理中はクロージャにキャプチャした
+	// ローカル値を使用するためこの変数は読み取られませんが、ルーター構築
+	// （NewLogger 呼び出し）と並行して本変数を読み書きするとデータ競合に
+	// なるため避けてください。
 	IsDebug = false
 
 	// sensitiveKeyPattern は機密情報を保持するキー名の判定パターンです。
@@ -60,7 +62,11 @@ func (w *accessLogResponseWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// NewLogger は、アクセスログを出力するミドルウェアを返します
+// NewLogger は、アクセスログを出力するミドルウェアを返します。
+// 構築時に環境変数 (GloudiaEnv) を読み取り、パッケージ変数 IsDebug を設定します。
+// デバッグモードではリクエストボディも最大 1 MiB までログに出力します
+// （機密情報の値はマスクされます）。
+// パターン: Chi (r.Use で適用)
 func NewLogger() func(http.Handler) http.Handler {
 	env, err := environment.NewEnvValue[environment.GloudiaEnv]("")
 	if err != nil {

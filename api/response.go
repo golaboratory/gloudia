@@ -23,6 +23,8 @@ type InvalidItem map[FieldName]ErrorMessage
 
 // unifiedResponder は UnifiedResponseBody を埋め込んだ構造体が自動的に満たす非公開インターフェースです。
 // ジェネリックヘルパー関数の型制約として使用されます。
+// getUnifiedBody がポインタレシーバであるため、埋め込んだ構造体 T ではなく
+// そのポインタ *T のみがこの制約を満たします（&T{...} を渡してください）。
 type unifiedResponder interface {
 	getUnifiedBody() *UnifiedResponseBody
 }
@@ -38,6 +40,7 @@ type UnifiedResponseBody struct {
 
 // getUnifiedBody は unifiedResponder インターフェースの実装です。
 // UnifiedResponseBody を埋め込んだ構造体はこのメソッドを自動的に継承します。
+// ポインタレシーバのため、埋め込んだ構造体はポインタ型のみが unifiedResponder を満たします。
 func (b *UnifiedResponseBody) getUnifiedBody() *UnifiedResponseBody {
 	return b
 }
@@ -51,8 +54,9 @@ func setSummary[T unifiedResponder](resp T, message string) {
 	}
 }
 
-// SetSuccess はレスポンスに成功ステータスとメッセージを設定し、humaハンドラーの戻り値として
-// そのまま return できる (T, error) のペアを返却するジェネリックヘルパー関数です。
+// SetSuccess はレスポンスの要約メッセージ（SummaryMessage）に message を設定し、
+// humaハンドラーの戻り値としてそのまま return できる (T, nil) のペアを返却する
+// ジェネリックヘルパー関数です。error は常に nil です。
 //
 // 使用例:
 //
@@ -64,8 +68,9 @@ func SetSuccess[T unifiedResponder](resp T, message string) (T, error) {
 
 // SetInvalid はレスポンスにバリデーションエラーを設定し、humaハンドラーの戻り値として
 // そのまま return できる (T, error) のペアを返却するジェネリックヘルパー関数です。
+// resp には要約メッセージのみが設定され、フィールドごとの詳細は戻り値の error 側で運ばれます。
 // error には huma.ErrorModel (HTTP 422) が格納され、InvalidItem の各フィールドエラーは
-// huma.ErrorDetail に変換されます。
+// huma.ErrorDetail に変換されます。InvalidItem はマップのため、ErrorDetail の順序は不定です。
 //
 // 使用例:
 //
@@ -116,9 +121,11 @@ func SetBadRequest[T unifiedResponder](resp T, message string) (T, error) {
 	return resp, huma.NewError(http.StatusBadRequest, message)
 }
 
-// SetError はレスポンスにビジネスロジックエラーを設定し、humaハンドラーの戻り値として
+// SetError はレスポンスに予期しない内部エラーを設定し、humaハンドラーの戻り値として
 // そのまま return できる (T, error) のペアを返却するジェネリックヘルパー関数です。
-// error には huma.ErrorModel (HTTP 500) が格納されます。err が nil の場合は error も nil を返却します。
+// err の内容は slog.Error でサーバーログにのみ記録され、クライアントには一切返却されません。
+// 要約メッセージ（設定済みの SummaryMessage は上書き）と huma.ErrorModel (HTTP 500) の Detail は
+// いずれも固定の内部エラーメッセージに置き換えられます。err が nil の場合は error も nil を返却します。
 //
 // 使用例:
 //

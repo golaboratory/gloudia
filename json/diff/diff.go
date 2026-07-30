@@ -16,14 +16,19 @@ var (
 	ErrNewJSONUnmarshalFailed = ergo.NewSentinel("failed to unmarshal new json")
 )
 
-// ChangePoint: 1つの変更点を表す構造体
+// ChangePoint は1つの変更点を表す構造体です。
 type ChangePoint struct {
 	Field    string `json:"field"`     // 変更されたプロパティ名 (ドット記法)
 	OldValue any    `json:"old_value"` // 変更前の値
 	NewValue any    `json:"new_value"` // 変更後の値
 }
 
-// ComputeDiff: 新旧のJSONバイト列を比較して差分リストを返す
+// ComputeDiff は新旧のJSONバイト列を再帰的に比較して差分リストを返します。
+// アンマーシャルに失敗した場合は ErrOldJSONUnmarshalFailed / ErrNewJSONUnmarshalFailed を
+// ラップしたエラーを返します（errors.Is で判定可能）。
+// 空のバイト列はオブジェクトなし（create/delete）として扱います。結果はキーの昇順でソートされます。
+// 片側にのみ存在するキーは、その値が null であっても差分として報告されます（null と欠落を区別）。
+// 差分がない場合は空の非nilスライスを返します。
 func ComputeDiff(oldJSON, newJSON []byte) ([]ChangePoint, error) {
 	var oldMap, newMap map[string]any
 

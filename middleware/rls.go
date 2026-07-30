@@ -9,11 +9,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// uuidPattern は UUID v4 形式を検証するための正規表現です。
+// uuidPattern は UUID 形式を検証するための正規表現です（バージョンは限定しません）。
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 // NewRLSProvider は Huma のミドルウェアとして動作し、以下の責務を持ちます。
-// 1. リクエストの認証情報またはヘッダーから tenant_id を特定
+// 1. Context の KeyTenantID から tenant_id を特定（ヘッダーは参照しません）
 // 2. DBトランザクションを開始
 // 3. SET LOCAL app.current_tenant_id を実行 (RLS有効化)
 // 4. トランザクションをContextに注入
@@ -24,8 +24,8 @@ func NewRLSProvider(db *pgxpool.Pool) func(huma.Context, func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		// 1. テナントID (tenant_id) の取得
 		// 本来は AuthMiddleware が先に走り、Context に Claims が入っている想定です。
-		// 未ログイン時(ゲスト予約など)の扱いは仕様によりますが、ここでは
-		// "X-Tenant-ID" ヘッダー または 認証情報 からの取得を試みます。
+		// Context の KeyTenantID（NewAuthProvider または NewTenantResolution が
+		// 格納した値）からのみ取得します。リクエストヘッダーは参照しません。
 		var tenantID string
 
 		// ケースA: 認証済みユーザーの場合

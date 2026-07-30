@@ -19,11 +19,15 @@ var (
 
 // Client はGotenberg APIとの通信を行うクライアントです
 type Client struct {
-	BaseURL    string
+	// BaseURL は Gotenberg サーバーのベースURLです。
+	BaseURL string
+	// HTTPClient はリクエスト送信に使用する net/httpclient のクライアントです。
 	HTTPClient *httpclient.Client
 }
 
-// NewClient は新しいGotenbergクライアントを作成します
+// NewClient は新しいGotenbergクライアントを作成します。
+// HTTPClient には net/httpclient の DefaultConfig（試行ごとのタイムアウト 30 秒、
+// 最大リトライ 3 回）を適用したクライアントが設定されます。
 func NewClient(baseURL string) *Client {
 	return &Client{
 		BaseURL:    baseURL,

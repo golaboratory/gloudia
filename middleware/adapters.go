@@ -4,15 +4,21 @@
 //
 //	func(http.Handler) http.Handler
 //
-// 対象: NewTenantResolution, NewLogger, NewRobotTag
+// 対象: NewTenantResolution, NewLogger, NewRobotTag,
+// NewCORS (*cors.Cors を返すため、その Handler メソッドを r.Use() に渡す)
 // 使用場所: Chi ルーターの r.Use() で適用
 //
 // # Huma パターン (Huma API ミドルウェア)
 //
 //	func(huma.Context, func(huma.Context))
 //
-// 対象: NewAuthProvider, NewRLSProvider, NewRedisRateLimiter
+// 対象: NewAuthProvider, NewAuthProviderWithType, NewRLSProvider, NewRedisRateLimiter
 // 使用場所: Huma API の api.UseMiddleware() で適用
+//
+// # ヘルパー
+//
+// GetClaims はハンドラ内で Context から認証済み Claims を取得します。
+// 未認証（Claims 不在）の場合は ErrUnauthenticated を返します。
 //
 // # アダプター
 //

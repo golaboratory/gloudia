@@ -23,6 +23,9 @@ type Hub struct {
 	mu sync.RWMutex
 }
 
+// NewHub は新しい Hub を作成します。
+// 作成後、ServeWs や各 Broadcast 系メソッドを呼び出す前に、必ず Run を
+// ゴルーチンとして起動してください（未起動の場合、登録や配信がブロックします）。
 func NewHub() *Hub {
 	return &Hub{
 		broadcast:  make(chan []byte),
@@ -32,7 +35,8 @@ func NewHub() *Hub {
 	}
 }
 
-// Run はHubのメインループを開始します。ゴルーチンとして起動してください。
+// Run はHubのメインループを開始します。専用のゴルーチンとして起動してください。
+// プロセス終了まで動作し続けます（停止機構はありません）。
 func (h *Hub) Run() {
 	for {
 		select {
@@ -70,13 +74,19 @@ func (h *Hub) Run() {
 
 // BroadcastToAll は全接続クライアントにメッセージを送信します。
 // 外部パッケージ(Service等)から呼び出すためのメソッドです。
+// テナント境界を越えて配信されるため、テナント向けのデータには必ず
+// BroadcastToTenant を使用してください。
+// broadcast チャネルはバッファ無しのため、Hub.Run が動作していない状態で
+// 呼び出すと永久にブロックします。送信バッファ（256 件）が満杯のクライアントは
+// スキップではなく切断されます（send チャネルをクローズして登録解除）。
 func (h *Hub) BroadcastToAll(message []byte) {
 	h.broadcast <- message
 }
 
 // BroadcastToTenant は指定テナント(tenantID)の接続クライアントにのみメッセージを送信します。
 // マルチテナント環境で他テナントへの情報漏えいを防ぐため、テナント向け通知は必ず本メソッドを使用してください。
-// 送信バッファが満杯のクライアントへの送信はスキップします（切断処理は Run ループ側の Ping/Pong に委ねる）。
+// 送信バッファが満杯のクライアントへの送信はスキップします（死活検知はクライアント毎の
+// readPump/writePump による Ping/Pong が行い、切断された接続は登録解除されます）。
 func (h *Hub) BroadcastToTenant(tenantID string, message []byte) {
 	if tenantID == "" {
 		return
@@ -99,7 +109,8 @@ func (h *Hub) BroadcastToTenant(tenantID string, message []byte) {
 // メッセージを送信します。RBAC 等でサーバー側が解決した宛先集合に限定して配信するために使用します
 // （テナント内の無差別配信による権限外情報の漏えいを防ぐ）。
 // 同一ユーザーの複数接続（複数タブ・複数端末）にはすべて配信します。
-// 送信バッファが満杯のクライアントへの送信はスキップします（切断処理は Run ループ側の Ping/Pong に委ねる）。
+// 送信バッファが満杯のクライアントへの送信はスキップします（死活検知はクライアント毎の
+// readPump/writePump による Ping/Pong が行い、切断された接続は登録解除されます）。
 func (h *Hub) BroadcastToUsers(tenantID string, userIDs []int64, message []byte) {
 	if tenantID == "" || len(userIDs) == 0 {
 		return

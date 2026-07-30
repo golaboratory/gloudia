@@ -8,10 +8,28 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// センチネルエラー定義
 var (
-	BookNotOpenedError         = ergo.NewSentinel("book is not opened")
-	SheetNotFoundError         = ergo.NewSentinel("sheet not found")
-	ColumnIndexOutOfRangeError = ergo.NewSentinel("column index out of range")
+	// ErrBookNotOpened は Open 前にファイル操作を行った場合のエラーです。
+	ErrBookNotOpened = ergo.NewSentinel("book is not opened")
+	// ErrSheetNotFound は指定した名前のシートが存在しない場合のエラーです。
+	ErrSheetNotFound = ergo.NewSentinel("sheet not found")
+	// ErrSheetAlreadyExists はコピー先など、既に存在するシート名を指定した場合のエラーです。
+	ErrSheetAlreadyExists = ergo.NewSentinel("sheet already exists")
+	// ErrColumnIndexOutOfRange は列番号が Excel の上限 (XFD = 16383) を超えた場合や
+	// 負の場合のエラーです。
+	ErrColumnIndexOutOfRange = ergo.NewSentinel("column index out of range")
+)
+
+// 以下は Go の慣習 (Err プレフィックス) に合わせる前の旧名エイリアスです。
+// 同一のセンチネル値のため errors.Is での判定結果は変わりません。
+var (
+	// Deprecated: ErrBookNotOpened を使用してください。
+	BookNotOpenedError = ErrBookNotOpened
+	// Deprecated: ErrSheetNotFound を使用してください。
+	SheetNotFoundError = ErrSheetNotFound
+	// Deprecated: ErrColumnIndexOutOfRange を使用してください。
+	ColumnIndexOutOfRangeError = ErrColumnIndexOutOfRange
 )
 
 // CellPosition はセルの位置（行・列）を表します。
@@ -44,23 +62,24 @@ func (e *Excel) Open(path string) error {
 // ファイルが開かれていない場合はエラーを返します。
 func (e *Excel) GetSheetList() ([]string, error) {
 	if e.book == nil {
-		return nil, BookNotOpenedError
+		return nil, ErrBookNotOpened
 	}
 	return e.book.GetSheetList(), nil
 }
 
 // CopySheet は src で指定したシートを dest という名前でコピーします。
-// コピー元シートが存在しない場合やコピー先シート名が既に存在する場合はエラーを返します。
+// コピー元シートが存在しない場合は ErrSheetNotFound を、
+// コピー先シート名が既に存在する場合は ErrSheetAlreadyExists を返します。
 func (e *Excel) CopySheet(src, dest string) error {
 	if e.book == nil {
-		return BookNotOpenedError
+		return ErrBookNotOpened
 	}
 
 	if !e.existSheet(src) {
-		return SheetNotFoundError
+		return ErrSheetNotFound
 	}
 	if e.existSheet(dest) {
-		return SheetNotFoundError
+		return ErrSheetAlreadyExists
 	}
 
 	srcIndex, err := e.book.GetSheetIndex(src)
@@ -80,11 +99,11 @@ func (e *Excel) CopySheet(src, dest string) error {
 // シートが存在しない場合はエラーを返します。
 func (e *Excel) SetCurrentSheet(sheetName string) error {
 	if e.book == nil {
-		return BookNotOpenedError
+		return ErrBookNotOpened
 	}
 
 	if !e.existSheet(sheetName) {
-		return SheetNotFoundError
+		return ErrSheetNotFound
 	}
 
 	e.CurrentSheetName = sheetName
@@ -96,11 +115,11 @@ func (e *Excel) SetCurrentSheet(sheetName string) error {
 // シートが存在しない場合はエラーを返します。
 func (e *Excel) GetAllCellValues() (map[CellPosition]string, error) {
 	if e.book == nil {
-		return nil, BookNotOpenedError
+		return nil, ErrBookNotOpened
 	}
 
 	if !e.existSheet(e.CurrentSheetName) {
-		return nil, SheetNotFoundError
+		return nil, ErrSheetNotFound
 	}
 
 	cells := make(map[CellPosition]string)
@@ -123,11 +142,11 @@ func (e *Excel) GetAllCellValues() (map[CellPosition]string, error) {
 // 行・列は0始まりです。シートが存在しない場合はエラーを返します。
 func (e *Excel) GetCellValueByIndex(rowIndex, columnIndex int) (string, error) {
 	if e.book == nil {
-		return "", BookNotOpenedError
+		return "", ErrBookNotOpened
 	}
 
 	if !e.existSheet(e.CurrentSheetName) {
-		return "", SheetNotFoundError
+		return "", ErrSheetNotFound
 	}
 
 	colName, err := convertColumnIndexToLetter(columnIndex)
@@ -142,11 +161,11 @@ func (e *Excel) GetCellValueByIndex(rowIndex, columnIndex int) (string, error) {
 // シートが存在しない場合はエラーを返します。
 func (e *Excel) GetCellValueByName(cellName string) (string, error) {
 	if e.book == nil {
-		return "", BookNotOpenedError
+		return "", ErrBookNotOpened
 	}
 
 	if !e.existSheet(e.CurrentSheetName) {
-		return "", SheetNotFoundError
+		return "", ErrSheetNotFound
 	}
 
 	value, err := e.book.GetCellValue(e.CurrentSheetName, cellName)
@@ -161,7 +180,7 @@ func (e *Excel) GetCellValueByName(cellName string) (string, error) {
 // ファイルが開かれていない場合はエラーを返します。
 func (e *Excel) SaveAs(path string) error {
 	if e.book == nil {
-		return BookNotOpenedError
+		return ErrBookNotOpened
 	}
 	return e.book.SaveAs(path)
 }
@@ -170,7 +189,7 @@ func (e *Excel) SaveAs(path string) error {
 // ファイルが開かれていない場合はエラーを返します。
 func (e *Excel) Save() error {
 	if e.book == nil {
-		return BookNotOpenedError
+		return ErrBookNotOpened
 	}
 	return e.book.Save()
 }
@@ -206,11 +225,11 @@ func (e *Excel) existSheet(sheetName string) bool {
 func convertColumnIndexToLetter(index int) (string, error) {
 	// 有効な 0 始まりインデックスは 0..MaxColumns-1。MaxColumns(16384) は範囲外。
 	if index < 0 || index >= excelize.MaxColumns {
-		return "", ColumnIndexOutOfRangeError
+		return "", ErrColumnIndexOutOfRange
 	}
 	name, err := excelize.ColumnNumberToName(index + 1)
 	if err != nil {
-		return "", ColumnIndexOutOfRangeError
+		return "", ErrColumnIndexOutOfRange
 	}
 	return name, nil
 }

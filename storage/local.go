@@ -13,6 +13,8 @@ import (
 )
 
 var (
+	// ErrInvalidPath は指定されたパスがベースディレクトリの外を指す場合
+	// （パストラバーサル）や、パスの解決に失敗した場合のエラーです。
 	ErrInvalidPath = ergo.NewSentinel("path traversal detected: path escapes base directory")
 )
 
@@ -130,6 +132,8 @@ func evalSymlinksAllowingMissing(p string) (string, error) {
 	return filepath.Join(resolvedParent, filepath.Base(p)), nil
 }
 
+// Upload は指定されたパスにデータをアップロードします。
+// baseDir の外を指すパス（パストラバーサル）は ErrInvalidPath で拒否します。
 func (s *LocalStorage) Upload(ctx context.Context, path string, data io.Reader) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -159,6 +163,9 @@ func (s *LocalStorage) Upload(ctx context.Context, path string, data io.Reader) 
 	return nil
 }
 
+// Download は指定されたパスのデータをダウンロードするためのReaderを返します。
+// 呼び出し元はReadCloserをCloseする責任があります。
+// baseDir の外を指すパス（パストラバーサル）は ErrInvalidPath で拒否します。
 func (s *LocalStorage) Download(ctx context.Context, path string) (io.ReadCloser, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -176,6 +183,9 @@ func (s *LocalStorage) Download(ctx context.Context, path string) (io.ReadCloser
 	return file, nil
 }
 
+// Delete は指定されたパスのファイルを削除します。
+// ファイルが既に存在しない場合は成功とみなし nil を返します。
+// baseDir の外を指すパス（パストラバーサル）は ErrInvalidPath で拒否します。
 func (s *LocalStorage) Delete(ctx context.Context, path string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -197,7 +207,8 @@ func (s *LocalStorage) Delete(ctx context.Context, path string) error {
 
 // GetSignedURL はローカル環境においては署名機能を持たないため、
 // 単純に静的ファイル配信サーバーへのパスを返します。
-// 実際の署名検証は行われない疑似的なものです。
+// 実際の署名検証は行われない疑似的なものです（method と expires 引数は無視されます）。
+// baseDir の外を指すパス（パストラバーサル）は ErrInvalidPath で拒否します。
 func (s *LocalStorage) GetSignedURL(ctx context.Context, path string, method string, expires time.Duration) (string, error) {
 	// 他のメソッド（Upload/Download/Delete）と同様にパストラバーサル検証を行い、
 	// baseDir 外を指すパスから URL を生成しないようにする。

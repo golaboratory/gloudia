@@ -16,7 +16,11 @@ import (
 
 // センチネルエラー定義
 var (
-	// ErrMaxRetriesExceeded はリトライ回数の上限に達した場合のエラー
+	// ErrMaxRetriesExceeded は、HTTP 5xx 応答のままリトライ回数の上限に達した
+	// 場合に返されるエラー。最後の試行がネットワーク等のトランスポートエラーで
+	// 失敗した場合は、そのエラーをラップした別のエラー（メッセージ
+	// "max retries reached"）が返り、errors.Is(err, ErrMaxRetriesExceeded) には
+	// 一致しないことに注意。
 	ErrMaxRetriesExceeded = ergo.NewSentinel("max retries reached")
 )
 
@@ -65,9 +69,15 @@ func redactURL(u *url.URL, redactPath bool) string {
 
 // ClientConfig はHTTPクライアントの設定です。
 type ClientConfig struct {
-	Timeout      time.Duration
-	MaxRetries   int
+	// Timeout は 1 回の試行ごとのタイムアウトです。リトライを含めた最悪の所要時間は
+	// おおよそ Timeout×(MaxRetries+1) + バックオフ待機の合計になります。
+	Timeout time.Duration
+	// MaxRetries はリトライ回数です。MaxRetries=3 の場合、最大 4 回試行します。
+	MaxRetries int
+	// RetryWaitMin は指数バックオフの初期待機時間です。
 	RetryWaitMin time.Duration
+	// RetryWaitMax はバックオフ待機時間の上限です。上限適用後に ±10% のジッタが
+	// 掛かるため、実際の待機時間は最大で RetryWaitMax×1.1 になり得ます。
 	RetryWaitMax time.Duration
 
 	// RedactURLPath を true にすると、ログ出力時に URL のパスもマスクします。
@@ -88,14 +98,15 @@ func DefaultConfig() ClientConfig {
 }
 
 // HTTPDoer はHTTPリクエストを実行するインターフェースです。
-// *http.Client および httpclient.Client がこのインターフェースを満たします。
+// *http.Client および本パッケージの *Client がこのインターフェースを満たします
+// （Do はポインタレシーバのため、値型の Client は満たしません）。
 // テスト時にモックへ差し替えることで、外部通信なしにHTTPクライアント利用コードを検証できます。
 type HTTPDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
 // Client はリトライ機能とログ出力機能を備えたHTTPクライアントです。
-// HTTPDoer インターフェースを満たします。
+// *Client が HTTPDoer インターフェースを満たします。
 type Client struct {
 	client *http.Client
 	config ClientConfig
@@ -113,6 +124,11 @@ func NewClient(config ClientConfig) *Client {
 
 // Do はHTTPリクエストを実行します。
 // 500系エラーやネットワークエラーの場合、設定に基づいてリトライを行います。
+// リトライのためリクエストボディは全量メモリにバッファリングされ、req.Body は
+// 差し替えられます（ストリーミングボディは非対応）。
+// 4xx 応答はリトライせず err=nil でそのまま返します。5xx のままリトライ上限に
+// 達した場合は最後のレスポンスを破棄し ErrMaxRetriesExceeded を返します。
+// バックオフ待機中に context がキャンセルされた場合は ctx.Err() を返します。
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error

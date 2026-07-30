@@ -1,5 +1,7 @@
 // Package pdf は Gotenberg API を使用した Excel → PDF 変換機能を提供します。
-// io.Pipe によるストリーミング処理でメモリ効率の高い大容量ファイル変換を実現します。
+// multipart リクエストは io.Pipe でストリーム生成しますが、内部の HTTP クライアント
+// （net/httpclient）がリトライのためにリクエストボディをバッファリングするため、
+// ピーク時のメモリ使用量は変換元ファイルのサイズ相当になります。
 //
 // # Gotenberg セットアップ手順
 //
@@ -13,10 +15,17 @@
 //
 //	curl http://localhost:3000/health
 //
-// 4. 使用例:
+// 4. 使用例 (低レベル API):
 //
 //	client := pdf.NewClient("http://localhost:3000")
-//	pdfBytes, err := client.ConvertExcelToPDF(ctx, excelBytes, "report.xlsx")
+//	pdfStream, err := client.Convert(ctx, "report.xlsx", excelReader, nil)
+//	if err != nil { ... }
+//	defer pdfStream.Close()
+//
+// ファイルからファイルへの変換には高レベル API の Converter を使用できます:
+//
+//	conv := pdf.NewConverter("in.xlsx", "out.pdf", "http://localhost:3000", nil)
+//	outPath, err := conv.FromExcel()
 //
 // 本番環境では Docker Compose または Kubernetes でサイドカーとしてデプロイすることを推奨します。
 // compose.yml での設定例:

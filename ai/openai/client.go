@@ -21,12 +21,13 @@ type Client struct {
 
 // Config は OpenAI クライアントの設定です。
 type Config struct {
-	APIKey string
+	APIKey string // OpenAI APIキー（必須）
 	OrgID  string // オプショナル
 }
 
-// DefaultConfig はデフォルトの OpenAI クライアント設定を返します。
-// APIKey は呼び出し側で上書きしてください。
+// DefaultConfig はゼロ値の Config を返します（既定値は設定されません）。
+// APIKey は呼び出し側で必ず設定してください。モデルの既定値は Config ではなく、
+// 各リクエストの Model が空の場合にリクエスト単位で適用されます。
 func DefaultConfig() Config {
 	return Config{}
 }
@@ -47,15 +48,15 @@ func NewClient(cfg Config) *Client {
 // ChatMessage はチャット補完リクエストのメッセージ構造です。
 type ChatMessage struct {
 	Role    string // "system", "user", "assistant"
-	Content string
+	Content string // メッセージ本文
 }
 
 // ChatRequest はチャット補完リクエストのパラメータです。
 type ChatRequest struct {
-	Model       string
-	Messages    []ChatMessage
-	Temperature *float32 // 0.0 ~ 2.0 (デフォルト: 1.0)
-	MaxTokens   int      // 0の場合はモデルの上限まで
+	Model       string        // 空の場合は openai.GPT4o を使用
+	Messages    []ChatMessage // 会話メッセージ列
+	Temperature *float32      // 0.0 ~ 2.0 (デフォルト: 1.0)
+	MaxTokens   int           // 0の場合はモデルの上限まで
 }
 
 // CreateChatCompletion はチャット補完APIを呼び出します。
@@ -76,7 +77,7 @@ func (c *Client) CreateChatCompletion(ctx context.Context, req ChatRequest) (str
 
 	model := req.Model
 	if model == "" {
-		model = openai.GPT4o // デフォルトモデル (2026年時点での推奨に合わせて変更してください)
+		model = openai.GPT4o // Model 未指定時のデフォルトモデル（推奨モデルの変化に応じて更新すること）
 	}
 
 	resp, err := c.client.CreateChatCompletion(
@@ -102,12 +103,12 @@ func (c *Client) CreateChatCompletion(ctx context.Context, req ChatRequest) (str
 
 // ImageAnalysisRequest は画像解析リクエストのパラメータです。
 type ImageAnalysisRequest struct {
-	Model        string
-	SystemPrompt string // AIへの指示（JSONスキーマの説明など）
-	UserPrompt   string // ユーザーからの質問
-	ImageURL     string // 画像のURL (http://... または data:image/jpeg;base64,...)
-	Temperature  *float32
-	MaxTokens    int
+	Model        string   // 空の場合は openai.GPT4o を使用
+	SystemPrompt string   // AIへの指示（JSONスキーマの説明など）
+	UserPrompt   string   // ユーザーからの質問
+	ImageURL     string   // 画像のURL (http://... または data:image/jpeg;base64,...)
+	Temperature  *float32 // nil の場合は 0.0 を送信（解析タスク向けにランダム性を抑制）
+	MaxTokens    int      // 0 の場合は 1000 に補正（ChatRequest と異なりモデル上限にはならない）
 }
 
 // CreateImageAnalysis は画像を解析し、JSON形式で結果を返します。

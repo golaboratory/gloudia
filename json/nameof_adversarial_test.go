@@ -165,3 +165,16 @@ func TestNameOf_ConcurrentSchemaBuild(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+// TestNameOf_TypedNilFieldPtr は型付き nil ポインタを第二引数に渡した場合に
+// panic せず ErrSecondArgMustBeFieldPtr を返すことを検証する。
+func TestNameOf_TypedNilFieldPtr(t *testing.T) {
+	type S struct {
+		Name string `json:"name"`
+	}
+	s := S{}
+	_, err := json.NameOf(&s, (*string)(nil))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, json.ErrSecondArgMustBeFieldPtr,
+		"errors.Is で判定可能であるべき")
+}

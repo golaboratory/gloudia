@@ -51,6 +51,10 @@ var (
 
 // SMTPSender は SMTP を使用してメールを送信する Sender インターフェースの実装です。
 // 日本語エンコーディング、添付ファイル、SSL/TLS、STARTTLS に対応しています。
+//
+// 注意: STARTTLS は日和見的（opportunistic）です。サーバーが STARTTLS を
+// 広告しない場合、エラーにならず平文のまま送信されます（TLS を必須化する
+// 手段は現状ありません）。
 type SMTPSender struct {
 	host     string
 	port     string
@@ -84,7 +88,8 @@ type SMTPConfig struct {
 }
 
 // DefaultSMTPConfig はデフォルトの SMTP 設定を返します。
-// Host / Port / Username / Password / From は呼び出し側で上書きしてください。
+// 既定値は Port="587"、Timeout=10秒、UseSSL=false です。
+// Host / Username / Password / From は呼び出し側で設定してください。
 func DefaultSMTPConfig() SMTPConfig {
 	return SMTPConfig{
 		Port:    "587",
@@ -110,6 +115,10 @@ func NewSMTPSender(host, port, username, password, from string) Sender {
 }
 
 // NewSMTPSenderWithConfig は SMTPConfig 構造体を使用して SMTPSender を作成します。
+// NewSMTPSender と異なり、ポートが "465" でも SSL を自動有効化しません。
+// ポート 465（暗黙的 TLS）を使用する場合は UseSSL: true を明示してください。
+// UseSSL: false のままだと平文 + STARTTLS で接続を試みるため、暗黙的 TLS の
+// ポートに対しては接続に失敗するか正しく動作しません。
 func NewSMTPSenderWithConfig(cfg SMTPConfig) Sender {
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 10 * time.Second
@@ -129,6 +138,13 @@ func NewSMTPSenderWithConfig(cfg SMTPConfig) Sender {
 // SendEmail は SMTP を使用してメールを送信します。
 // 宛先 (to, cc, bcc) や添付ファイル (attachFiles) をサポートし、
 // 日本語の件名や名前は RFC 2047 形式で自動的にエンコードされます。
+//
+// 空文字・空白のみのアドレスは除外され、to+cc+bcc がすべて空の場合は
+// ErrNoRecipientsSpecified を返します。アドレスに CR/LF が含まれる場合は
+// ErrInvalidAddress を返します（ヘッダーインジェクション対策）。
+// bcc はヘッダーに記載されず RCPT コマンドのみで送信されます。
+// 本文が "<html" または "<!doctype html" で始まる場合のみ HTML メールとして
+// 送信され、それ以外はプレーンテキストになります。
 func (s *SMTPSender) SendEmail(subject string, content string, to []string, cc []string, bcc []string, attachFiles []string) error {
 	to = s.filterEmpty(to)
 	cc = s.filterEmpty(cc)

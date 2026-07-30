@@ -47,7 +47,8 @@ type serveConfig struct {
 
 // WithAllowedOrigins は WebSocket 接続を許可する Origin を明示的に指定します。
 // 指定した場合、環境変数 WS_ALLOWED_ORIGINS より優先されます。
-// 比較はスキームとホストを含む完全一致（大文字小文字は区別しない）です。
+// 比較はスキーム・ホスト・ポートを含む Origin 文字列全体の完全一致です
+// （大文字小文字は区別しない）。ワイルドカードは使用できません。
 //
 //	realtime.ServeWs(hub, maker, w, r,
 //	    realtime.WithAllowedOrigins("https://app.example.com", "https://admin.example.com"))
@@ -153,9 +154,17 @@ func newUpgrader(c serveConfig) *websocket.Upgrader {
 // ServeWs はWebSocket接続リクエストを処理します。
 // Chiルーターなどで `/ws` エンドポイントとして登録します。
 //
-// オリジン検証は既定で同一オリジンのみを許可します（fail-closed）。
+// PASETO トークンによる認証を行い、トークンが無い・無効な場合は 401 を返します。
+// トークンは Authorization: Bearer ヘッダーを推奨し、非推奨の ?token= クエリ
+// パラメータにもフォールバックします。
+//
+// オリジン検証は既定で同一オリジンのみを許可します（fail-closed）。ただし
+// Origin ヘッダを送らない非ブラウザクライアントは許可されます。
 // クロスオリジン接続を受け付ける場合は WithAllowedOrigins、または環境変数
 // WS_ALLOWED_ORIGINS で許可リストを明示してください。
+//
+// hub.Run が動作していることが前提です（未起動の場合、Hub への登録で
+// ブロックします）。接続ごとに読み書き用のゴルーチンを 2 つ起動します。
 func ServeWs(hub *Hub, tokenMaker *auth.TokenMaker, w http.ResponseWriter, r *http.Request, opts ...ServeOption) {
 	// 1. トークンの取得 (Authorization ヘッダー優先、クエリは非推奨フォールバック)
 	token := extractToken(r)

@@ -16,8 +16,11 @@ import (
 //
 // 引数:
 //
-//	endpoint: コレクタのエンドポイント (例: "localhost:4318")
-//	insecure: trueの場合、TLS(SSL)を使用せずに接続します (ローカル開発用)
+//	endpoint: コレクタのエンドポイント。スキームやパスを含まない "host:port" 形式で
+//	          指定します (例: "localhost:4318"。パス /v1/traces はExporterが付与します)
+//	insecure: trueの場合、TLS(SSL)を使用せずに接続します (ローカル開発用)。
+//	          falseはTLSを強制するわけではなく、OTEL_EXPORTER_OTLP_* 環境変数で
+//	          insecure が設定されている場合はそちらが有効になります
 func NewOTLPExporter(ctx context.Context, endpoint string, insecure bool) (sdktrace.SpanExporter, error) {
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(endpoint),

@@ -13,8 +13,11 @@ import (
 // パターン: Huma (api.UseMiddleware で適用)
 //
 // Authorization ヘッダーから Bearer トークンを読み取り、検証を行います。
-// 検証に成功した場合、トークンのペイロード（Claims）をコンテキストに保存します。
-// ヘッダーが存在しない場合は 401 Unauthorized を返します。
+// ヘッダーが存在しない・形式不正・検証失敗の場合は 401 Unauthorized を返します。
+// ホスト名由来の KeyTenantID が Context に存在し claims.TenantID と一致しない場合は
+// 403 Forbidden を返します（クロステナントアクセスの防止）。
+// 検証成功時は Claims を KeyClaims に保存し、KeyTenantID を検証済みの claims.TenantID
+// で上書きします。必ず NewRLSProvider より前に適用してください。
 //
 // 引数:
 //

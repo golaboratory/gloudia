@@ -55,6 +55,30 @@ func TestParseFlexibleDate_JPFormat(t *testing.T) {
 	}
 }
 
+// TestParseFlexibleDate_SlashAndCompactFormat はスラッシュ区切りと
+// 8 桁数字形式のパース成功を検証する。
+func TestParseFlexibleDate_SlashAndCompactFormat(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  time.Time
+	}{
+		{"スラッシュ区切り (ゼロ埋め)", "2026/04/25", time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)},
+		{"スラッシュ区切り (ゼロ埋めなし)", "2026/4/25", time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)},
+		{"スラッシュ区切り (1桁月日)", "2026/1/2", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)},
+		{"8桁数字", "20260425", time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)},
+		{"8桁数字 (うるう年の2/29)", "20240229", time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseFlexibleDate(tt.input)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 // TestParseFlexibleDate_InvalidFormat は不正形式に対し
 // ErrInvalidDateFormat を返すことを検証する。
 func TestParseFlexibleDate_InvalidFormat(t *testing.T) {
@@ -63,12 +87,14 @@ func TestParseFlexibleDate_InvalidFormat(t *testing.T) {
 		input string
 	}{
 		{"空文字", ""},
-		{"スラッシュ区切り", "2026/04/25"},
 		{"ドット区切り", "2026.04.25"},
 		{"年月のみ", "2026-04"},
+		{"6桁数字", "202604"},
 		{"日付ではない文字列", "hello world"},
 		{"存在しない日付 (ISO)", "2026-02-30"},
 		{"存在しない日付 (JP)", "2026年2月30日"},
+		{"存在しない日付 (スラッシュ)", "2026/2/30"},
+		{"存在しない日付 (8桁)", "20260230"},
 		{"うるう年でない年の2/29 (ISO)", "2025-02-29"},
 		{"うるう年でない年の2/29 (JP)", "2025年2月29日"},
 		{"全角数字 (現状非対応)", "２０２６年４月２５日"},
@@ -122,4 +148,15 @@ func TestErrInvalidDateFormat_IsSentinel(t *testing.T) {
 func TestDateFormatConstants(t *testing.T) {
 	assert.Equal(t, "2006-01-02", ISO8601DateFormat)
 	assert.Equal(t, "2006年1月2日", JPDateFormat)
+	assert.Equal(t, "2006/1/2", SlashDateFormat)
+	assert.Equal(t, "20060102", CompactDateFormat)
+}
+
+// TestJST は JST タイムゾーンが UTC+9 の固定オフセットであることを保証する。
+func TestJST(t *testing.T) {
+	tm := time.Date(2026, 7, 30, 12, 0, 0, 0, JST)
+	assert.Equal(t, "JST", tm.Location().String())
+	_, offset := tm.Zone()
+	assert.Equal(t, 9*60*60, offset)
+	assert.Equal(t, time.Date(2026, 7, 30, 3, 0, 0, 0, time.UTC).Unix(), tm.Unix())
 }
