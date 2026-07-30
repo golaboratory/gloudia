@@ -42,11 +42,11 @@ func DefaultSakuraStorageConfig() SakuraStorageConfig {
 
 // SakuraStorageConfig は初期化に必要な設定情報です。
 type SakuraStorageConfig struct {
-	AccessKey string
-	SecretKey string
+	AccessKey string // アクセスキーID
+	SecretKey string // シークレットアクセスキー
 	Endpoint  string // 例: "https://s3.isk01.sakurastorage.jp"
-	Bucket    string
-	Region    string // 基本的に "jp-north-1" (指定がない場合は自動設定しません)
+	Bucket    string // バケット名 (必須。未指定の場合 NewSakuraObjectStorage は ErrBucketNameRequired を返します)
+	Region    string // 基本的に "jp-north-1" (未指定の場合は "jp-north-1" が自動設定されます)
 }
 
 // NewSakuraObjectStorage は新しいSakuraObjectStorageインスタンスを作成します。
@@ -99,6 +99,7 @@ func NewSakuraObjectStorage(ctx context.Context, cfg SakuraStorageConfig) (*Saku
 	}, nil
 }
 
+// Upload は指定されたパス(キー)にデータをアップロードします。
 func (s *SakuraObjectStorage) Upload(ctx context.Context, path string, data io.Reader) error {
 	// feature/s3/manager を使用して、大きなファイルも効率的にアップロード
 	_, err := s.uploader.Upload(ctx, &s3.PutObjectInput{
@@ -112,6 +113,8 @@ func (s *SakuraObjectStorage) Upload(ctx context.Context, path string, data io.R
 	return nil
 }
 
+// Download は指定されたパスのデータをダウンロードするためのReaderを返します。
+// 呼び出し元はReadCloserをCloseする責任があります。
 func (s *SakuraObjectStorage) Download(ctx context.Context, path string) (io.ReadCloser, error) {
 	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
@@ -123,6 +126,7 @@ func (s *SakuraObjectStorage) Download(ctx context.Context, path string) (io.Rea
 	return out.Body, nil
 }
 
+// Delete は指定されたパスのオブジェクトを削除します。
 func (s *SakuraObjectStorage) Delete(ctx context.Context, path string) error {
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
@@ -134,6 +138,9 @@ func (s *SakuraObjectStorage) Delete(ctx context.Context, path string) error {
 	return nil
 }
 
+// GetSignedURL は指定されたパスへの署名付きURL（期限付きアクセスURL）を発行します。
+// method は "GET" / "PUT" / "DELETE" のみ対応し、それ以外を指定した場合は
+// ErrUnsupportedMethod をラップしたエラーを返します。
 func (s *SakuraObjectStorage) GetSignedURL(ctx context.Context, path string, method string, expires time.Duration) (string, error) {
 	var req *v4.PresignedHTTPRequest
 	var err error

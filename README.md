@@ -38,8 +38,8 @@ import "github.com/golaboratory/gloudia/auth"
 | `ai/openai` | OpenAI API クライアント。チャット補完と、任意の型へデコードする画像解析 | `NewClient`, `AnalyzeImage[T]` |
 | `api` | Huma 向けの統一 API レスポンス。ハンドラーから直接 `return` できるジェネリックヘルパー | `SetSuccess`, `SetInvalid`, `SetForbidden`, `UnifiedResponseBody` |
 | `auth` | PASETO v4.local トークン、bcrypt パスワード、TOTP / 2FA | `TokenMaker`, `HashPassword`, `Setup2FA`, `Verify2FAWithTimeStep` |
-| `datetime` | 複数フォーマットに対応する日付パース | `ParseFlexibleDate` |
-| `datetime/calendar/jp` | 日本の暦。旧暦（太陰太陽暦）・元号・六曜・二十四節気・干支・和風月名（1960〜2100 年） | `JapaneseLunisolarCalendar`, `GregorianDateToRokuyoString` |
+| `datetime` | 複数フォーマット対応の日付パースと JST タイムゾーン | `ParseFlexibleDate`, `JST` |
+| `datetime/calendar/jp` | 日本の暦。旧暦（太陰太陽暦）・元号・和暦表記・六曜・二十四節気・干支・和風月名（旧暦変換は 1960〜2049 年） | `JapaneseLunisolarCalendar`, `GregorianDateToWarekiString`, `GregorianDateToRokuyoString` |
 | `environment` | `envconfig` によるジェネリックな型安全環境変数ロード | `NewEnvValue[T]` |
 | `infra` | 接続プール設定付き Redis クライアント初期化 | `NewRedisClient` |
 | `json` | 構造体フィールドから JSON タグ名を取得 | `NameOf` |
@@ -49,8 +49,8 @@ import "github.com/golaboratory/gloudia/auth"
 | `net/mail` | 日本語対応の SMTP 送信 | `NewSMTPSenderWithConfig`, `Sender` |
 | `net/slack` | Slack Incoming Webhook 通知 | `NewClient`, `PostText` |
 | `realtime` | WebSocket の Hub / Client。全体・テナント単位・ユーザー指定のブロードキャスト | `NewHub`, `ServeWs`, `Hub.BroadcastToTenant` |
-| `reporting/excel` | `excelize` ベースの Excel 生成・操作 | `Excel`, `CellPosition` |
-| `reporting/pdf` | Gotenberg API を用いた Excel → PDF 変換（`io.Pipe` によるストリーミング） | `NewConverter`, `ConvertOptions` |
+| `reporting/excel` | `excelize` ベースの既存 Excel ファイル操作（読み取り・シートコピー・保存） | `Excel`, `CellPosition` |
+| `reporting/pdf` | Gotenberg API を用いた Excel → PDF 変換 | `NewConverter`, `ConvertOptions` |
 | `security/crypto` | AES-256-GCM 暗号化・復号 | `NewCryptor` |
 | `storage` | ファイルストレージ抽象化。ローカル FS と さくらのクラウド オブジェクトストレージ（S3 互換） | `Storage`, `NewLocalStorage`, `NewSakuraObjectStorage` |
 | `telemetry` | OpenTelemetry 分散トレーシングと HTTP ミドルウェア、OTLP エクスポーター | `InitTracerProvider`, `NewOTLPExporter`, `HTTPMiddleware` |

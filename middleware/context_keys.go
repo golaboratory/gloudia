@@ -12,7 +12,7 @@ const (
 	// KeyDBTx はミドルウェアで開始したデータベーストランザクション (pgx.Tx) を保持します
 	KeyDBTx contextKey = "db_tx"
 
-	// KeyTenantDomeinName はテナント名を保持します
+	// KeyTenantDomainName はテナント名を保持します
 	KeyTenantDomainName contextKey = "tenant_domain_name"
 
 	// KeyTenantHost はテナント解決で検証済みのホスト名（ポート除去済み、X-Forwarded-Host は

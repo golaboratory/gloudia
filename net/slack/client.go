@@ -19,17 +19,17 @@ var (
 
 // IncomingWebhookPayload はSlackへ送信するメッセージの構造体です。
 type IncomingWebhookPayload struct {
-	Text        string       `json:"text"`
-	Attachments []Attachment `json:"attachments,omitempty"`
-	Blocks      []Block      `json:"blocks,omitempty"`
+	Text        string       `json:"text"`                  // 本文テキスト (Blocks 使用時は通知等のフォールバック)
+	Attachments []Attachment `json:"attachments,omitempty"` // レガシー形式の添付
+	Blocks      []Block      `json:"blocks,omitempty"`      // Block Kit のブロック
 }
 
 // Attachment はレガシーな添付ファイルの構造体です。
 type Attachment struct {
-	Color  string `json:"color,omitempty"` // "good", "warning", "danger" or hex code
-	Title  string `json:"title,omitempty"`
-	Text   string `json:"text,omitempty"`
-	Footer string `json:"footer,omitempty"`
+	Color  string `json:"color,omitempty"`  // "good", "warning", "danger" or hex code
+	Title  string `json:"title,omitempty"`  // 添付のタイトル
+	Text   string `json:"text,omitempty"`   // 添付の本文
+	Footer string `json:"footer,omitempty"` // フッターテキスト
 }
 
 // Block はBlock Kit用の簡易構造体です(詳細な定義は必要に応じて拡張)。
@@ -55,6 +55,8 @@ func NewClient(webhookURL string) *Client {
 }
 
 // Notify は指定されたメッセージをSlackへ送信します。
+// 内部で net/httpclient (DefaultConfig: 試行ごと 30 秒タイムアウト、最大 3 回リトライ)
+// を使用します。応答が 200 以外の場合は ErrUnexpectedStatus をラップしたエラーを返します。
 func (c *Client) Notify(ctx context.Context, payload IncomingWebhookPayload) error {
 	body, err := json.Marshal(payload)
 	if err != nil {

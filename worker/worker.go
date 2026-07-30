@@ -28,7 +28,9 @@ func DefaultConfig() Config {
 // 具体的な実装（PostgreSQLなど）はこのインターフェースを満たす必要があります。
 type Worker interface {
 	// PopNextJob は実行待ちの次のジョブを取得し、処理中ステータスに更新します。
-	// ジョブが存在しない場合は sql.ErrNoRows などのエラーを返すことが期待されます。
+	// ジョブが存在しない場合は (nil, nil) を返すか、sql.ErrNoRows などのエラーを返します。
+	// いずれもポーリングループでは「ジョブなし」として扱われます。
+	// その他のフェッチエラーはログに記録された上で無視され、ワーカーは停止しません。
 	PopNextJob(ctx context.Context) (json.RawMessage, error)
 
 	// ParseJob は取得したジョブのJSONデータから、ジョブIDとジョブタイプを抽出します。
@@ -48,6 +50,8 @@ type Worker interface {
 // WorkerProcess は非同期ジョブを実行するワーカープロセスです。
 // 定期的にジョブキューをポーリングし、登録されたプロセッサーを使用してジョブを処理します。
 type WorkerProcess struct {
+	// Worker は NewWorker で渡されたジョブキュー操作の実装です。
+	// Start の実行中に変更してはいけません。
 	Worker    Worker
 	processor *Processor
 	cfg       Config
@@ -66,7 +70,10 @@ func NewWorker(worker Worker, cfg Config, jobs map[string]JobProcessor) *WorkerP
 }
 
 // Start はワーカーを開始し、Contextがキャンセルされるまでブロックします。
-// 指定された間隔（cfg.Interval）でジョブのポーリングを行います。
+// ジョブを処理できた場合は待機せず即座に次のジョブをポーリングし、
+// キューが空の場合のみ次のポーリングまで cfg.Interval だけ待機します（Interval はアイドル時の待機間隔です）。
+// cfg.Interval が 0 以下の場合は、レシーバの設定を書き換えて DefaultConfig() の値（5秒）に補正します。
+// 同一の WorkerProcess に対して並行に呼び出すことはできません。
 func (w *WorkerProcess) Start(ctx context.Context) {
 	slog.Info("Starting background worker...")
 	// 不正な Interval（0 以下）は time.NewTicker を panic させるため、既定値に補正する。
@@ -105,7 +112,8 @@ func (w *WorkerProcess) Start(ctx context.Context) {
 }
 
 // processNextJob はDBから次のジョブを取得して実行します。
-// 戻り値 bool: ジョブを処理した場合は true, ジョブがなかった場合やエラー時は false
+// 戻り値 bool: ジョブを取得できた場合は true（パース・処理・完了更新に失敗した場合を含む）。
+// ジョブがなかった場合、フェッチエラー時、panic 回復時は false。
 //
 // ユーザー提供の ParseJob / JobProcessor.Process が panic しても、ワーカーの
 // ポーリングループ (Start) が停止しないよう、ここで panic を回復する。

@@ -30,9 +30,13 @@ var (
 
 // Claims はトークンに含まれるペイロード情報を定義します。
 type Claims struct {
-	UserID   int64  `json:"user_id"`
+	// UserID はユーザーの識別子です。
+	UserID int64 `json:"user_id"`
+	// TenantID はテナントのUUIDです。UUID形式以外の値はミドルウェア（RLS）で
+	// 拒否されるため、必ずテナントのUUIDを設定してください。
 	TenantID string `json:"tenant_id"`
-	RoleID   int64  `json:"role_id"`
+	// RoleID はロールの識別子です。
+	RoleID int64 `json:"role_id"`
 	// TokenType はトークンの発行元種別（例: "system_admin"）を表します。
 	// 未設定（通常トークン・旧トークン）の場合は空文字となります。
 	// 受信側ミドルウェアでクロス特権アクセス（別種トークンの使い回し）を拒否するために使用します。
@@ -124,7 +128,8 @@ func (maker *TokenMaker) VerifyToken(tokenString string) (*Claims, error) {
 // VerifyTokenWithExpiry は VerifyToken と同様にトークンを検証し、クレームに加えて
 // トークンの有効期限（exp クレーム）も返します。
 // 有効期限を超えて維持される長寿命の接続（WebSocket 等）で、接続側に有効期限を
-// 強制させるために使用します。exp が取得できない場合はゼロ値を返します。
+// 強制させるために使用します。exp クレームを持たないトークンは、パーサーの
+// NotExpired ルールにより検証自体が失敗しエラーを返します。
 func (maker *TokenMaker) VerifyTokenWithExpiry(tokenString string) (*Claims, time.Time, error) {
 	parser := paseto.NewParser()
 
@@ -161,7 +166,8 @@ func (maker *TokenMaker) VerifyTokenWithExpiry(tokenString string) (*Claims, tim
 	// 取得できない場合は空文字のままとし、後方互換性を維持する。
 	_ = token.Get("token_type", &payload.TokenType)
 
-	// 有効期限の取得（設定されていない場合はゼロ値）
+	// 有効期限の取得。NotExpired ルールにより exp を持たないトークンは
+	// ここまで到達しないため、以下の分岐は防御的なフォールバック。
 	exp, expErr := token.GetExpiration()
 	if expErr != nil {
 		return payload, time.Time{}, nil
@@ -170,7 +176,9 @@ func (maker *TokenMaker) VerifyTokenWithExpiry(tokenString string) (*Claims, tim
 	return payload, exp, nil
 }
 
-// Helper: 開発用などでランダムなHexキーを生成したい場合に使用
+// GenerateRandomKey はHexエンコードされた32バイトのランダムキーを生成して返します。
+// 生成されたキーは NewTokenMaker にそのまま渡せる形式です。
+// 開発時の鍵生成や初期セットアップの用途を想定しています。
 func GenerateRandomKey() string {
 	key := paseto.NewV4SymmetricKey()
 	return key.ExportHex()

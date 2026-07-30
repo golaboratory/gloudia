@@ -19,10 +19,11 @@ type Converter struct {
 }
 
 // NewConverter は新しい Converter インスタンスを作成します。
+// 変換処理のタイムアウトは固定で 30 秒に設定されます。
 // excelPath: 変換元の Excel ファイルパス
 // pdfPath: 変換後の PDF 出力先パス
 // gotenbergURL: Gotenberg サーバーの URL
-// option: 変換オプション (nil の場合はデフォルト設定が使用される可能性があります)
+// option: 変換オプション (nil の場合は Client.Convert 内で DefaultOptions() が適用されます)
 func NewConverter(excelPath string, pdfPath string, gotenbergURL string, option *ConvertOptions) *Converter {
 	return &Converter{
 		excelPath:    excelPath,

@@ -45,11 +45,11 @@ var (
 //   - includeLower: 小文字を含める必要があるか
 //   - includeNumber: 数字を含める必要があるか
 //   - includeSymbol: 記号を含める必要があるか
-//   - minLength: 最小長
+//   - minLength: 最小長（バイト数ではなく文字数（ルーン数）で判定します）
 //
 // 戻り値:
-//   - bool: 条件を満たす場合はtrue
-//   - error: エラー情報
+//   - bool: 条件を満たす場合はtrue（判定結果はこの値のみで表されます）
+//   - error: 常に nil（インターフェースの安定性のために維持しています）
 func ValidateStrength(
 	password string,
 	includeUpper, includeLower, includeNumber, includeSymbol bool,
@@ -85,6 +85,9 @@ func ValidateStrength(
 }
 
 // HashPassword は平文パスワードを bcrypt でハッシュ化して返します。
+// コストは呼び出しのたびに environment.NewEnvValue を通じて環境変数 CRYPT_COST
+// から読み込みます。未設定、または bcrypt の許容範囲（MinCost〜MaxCost）外の
+// 場合は bcrypt.DefaultCost にフォールバックします。
 func HashPassword(password string) (string, error) {
 
 	// 既定は bcrypt.DefaultCost(10)。環境変数 CRYPT_COST が指定され、かつ
@@ -104,7 +107,9 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-// CheckPassword はハッシュ化されたパスワードと平文パスワードが一致するか検証します。
+// CheckPassword は平文パスワードと bcrypt ハッシュが一致するか検証します。
+// 第1引数 password には平文パスワードを、第2引数 hashedPassword には bcrypt
+// ハッシュを指定します（どちらも string のため取り違えに注意）。
 // 一致する場合は nil を、不一致の場合は error を返します。
 func CheckPassword(password string, hashedPassword string) error {
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {

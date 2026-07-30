@@ -16,10 +16,11 @@ import (
 )
 
 // rateLimitClientIP はレート制限のキーに用いるクライアント識別子（IP）を返します。
-// X-Real-IP / X-Forwarded-For は信頼できるプロキシ（TRUSTED_PROXY_CIDRS、未設定時は
-// プライベート/ループバック）経由のリクエストの場合のみ採用し、それ以外は直接の
-// 接続元アドレスを用います。これにより、直接公開された経路でクライアントがこれらの
-// ヘッダーを偽装し、毎回異なるキーでレート制限を回避することを防ぎます。
+// X-Real-IP / X-Forwarded-For は TRUSTED_PROXY_CIDRS で明示的に信頼したプロキシ
+// 経由のリクエストの場合のみ採用し、それ以外は直接の接続元アドレスを用います。
+// TRUSTED_PROXY_CIDRS 未設定時はいかなる送信元も信頼しません（fail-closed）。
+// これにより、直接公開された経路でクライアントがこれらのヘッダーを偽装し、
+// 毎回異なるキーでレート制限を回避することを防ぎます。
 func rateLimitClientIP(ctx huma.Context, trusted []*net.IPNet) string {
 	remote := ctx.RemoteAddr()
 	if isTrustedProxy(remote, trusted) {
@@ -60,6 +61,10 @@ func DefaultRateLimitConfig() RateLimitConfig {
 }
 
 // NewRedisRateLimiter は Redis ベースのレート制限 Huma ミドルウェアを生成します。
+// キーは "ratelimit:<Name>:<クライアントIP>" です（Name 未指定時は "default"）。
+// Redis 障害時は fail-open（リクエストを許可）とし、ERROR ログを出力します。
+// 応答には X-RateLimit-Limit / X-RateLimit-Remaining / X-RateLimit-Reset を付与し、
+// 制限超過時は Retry-After ヘッダー付きで 429 を返します。
 // パターン: Huma (api.UseMiddleware で適用)
 func NewRedisRateLimiter(rdb *redis.Client, config RateLimitConfig) func(huma.Context, func(huma.Context)) {
 	// redis_rate ライブラリの初期化

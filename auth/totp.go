@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	// ErrTOTPKeyGenerationFailed はTOTPキーの生成に失敗した場合のエラーです。
+	// ErrTOTPKeyGenerationFailed はTOTP関連の生成処理（キー生成、QRコード画像の生成、
+	// PNGエンコード、検証時のTOTPコード生成）に失敗した場合のエラーです。
 	ErrTOTPKeyGenerationFailed = ergo.NewSentinel("failed to generate TOTP key")
 )
 
@@ -25,8 +26,9 @@ type Setup2FAResponse struct {
 	Secret string `json:"secret" doc:"ユーザーのDBに保存すべきシークレットキー（本番ではクライアントに返さずサーバー側で保存）"`
 	// QRCodeURI は "otpauth://" から始まるURI文字列です。
 	QRCodeURI string `json:"qr_code_uri" doc:"otpauth://から始まるURI"`
-	// QRCodeB64 はHTMLのimgタグで表示可能なBase64エンコードされたPNG画像データです。
-	QRCodeB64 string `json:"qr_code_base64" doc:"HTMLのimgタグで表示可能なBase64画像データ"`
+	// QRCodeB64 は "data:image/png;base64," プレフィックス付きのデータURIです。
+	// そのままHTMLのimgタグのsrc属性に指定して表示できます。
+	QRCodeB64 string `json:"qr_code_base64" doc:"imgタグのsrcにそのまま指定できるPNG画像のデータURI（data:image/png;base64,...）"`
 }
 
 // Setup2FA は指定された発行者名とアカウント名を使用して新しいTOTPキーを生成し、

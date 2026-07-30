@@ -16,8 +16,11 @@ var (
 	ErrRedisConnectionFailed = ergo.NewSentinel("failed to connect to redis")
 )
 
-// NewRedisClient はRedisクライアントを初期化します
-// 本番では環境変数からADDR等を取得するように変更してください
+// NewRedisClient はRedisクライアントを初期化します。
+// プールサイズは環境変数 REDIS_POOL_SIZE から取得します（既定値 10）。
+// DialTimeout 10秒 / ReadTimeout 30秒 / WriteTimeout 30秒 は固定です。
+// 生成時に 5 秒タイムアウトの Ping による接続確認（ネットワークI/O）をブロッキングで実行し、
+// 失敗した場合は ErrRedisConnectionFailed をラップしたエラーを返します。
 func NewRedisClient(addr string, password string, db int) (*redis.Client, error) {
 	poolSize := 10
 	if env := os.Getenv("REDIS_POOL_SIZE"); env != "" {

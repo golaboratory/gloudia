@@ -9,7 +9,12 @@ import (
 	"strings"
 )
 
+// Dispatcher はテナント名からテナントIDを解決するためのインターフェースです。
+// NewTenantResolution がリクエストごとに呼び出します。
 type Dispatcher interface {
+	// FindTenantIDByDomainName はテナント名（リクエストホストの最初の DNS ラベル。
+	// 例: "tenant-a.example.com" の "tenant-a"）からテナントIDを解決します。
+	// エラーを返した場合、該当リクエストは HTTP 400 で終了します。
 	FindTenantIDByDomainName(ctx context.Context, domainName string) (string, error)
 }
 
@@ -74,6 +79,13 @@ func isTrustedProxy(remoteAddr string, trusted []*net.IPNet) bool {
 	return false
 }
 
+// NewTenantResolution はリクエストのホスト名からテナントを解決するミドルウェアを返します。
+// /openapi.json, /openapi.yaml, /docs, /health は解決をスキップします。
+// ホスト（ポート除去済み）の最初の DNS ラベルをテナント名として抽出します。
+// X-Forwarded-Host は TRUSTED_PROXY_CIDRS で明示的に信頼したプロキシ経由の場合のみ
+// 採用します。解決に失敗した場合は 400 を返して処理を中断します。
+// 成功時は KeyTenantDomainName / KeyTenantID / KeyTenantHost を Context に格納します。
+// パターン: Chi (r.Use で適用)
 func NewTenantResolution(tenantConv Dispatcher) func(http.Handler) http.Handler {
 	trustedProxies := parseTrustedProxyCIDRs()
 	return func(next http.Handler) http.Handler {

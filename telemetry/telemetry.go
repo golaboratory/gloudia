@@ -15,9 +15,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// InitTracerProvider はOpenTelemetryのTracerProviderを初期化します。
+// InitTracerProvider はOpenTelemetryのTracerProviderを初期化し、グローバルプロバイダとして登録します。
+// serviceName は service.name リソース属性に設定されます。
 // exporter を指定することで、JaegerやStdoutなど出力先を切り替えられます。
-// 返り値の shutdown 関数はアプリケーション終了時に呼び出してください。
+// グローバルの TextMapPropagator も W3C TraceContext で上書きするため、
+// アプリケーションが設定済みのプロパゲータは置き換えられます。
+// Spanはバッチ送信されるため、返り値の shutdown 関数をアプリケーション終了時に必ず呼び出して
+// フラッシュしてください。エラー時の shutdown 関数は nil です。
 func InitTracerProvider(serviceName string, exporter sdktrace.SpanExporter) (func(context.Context) error, error) {
 	res, err := resource.New(context.Background(),
 		resource.WithAttributes(
@@ -44,6 +48,9 @@ func InitTracerProvider(serviceName string, exporter sdktrace.SpanExporter) (fun
 
 // HTTPMiddleware は受け取ったリクエストのTraceContextを抽出し、
 // 新しいSpanを開始するHTTPミドルウェアです。
+// Span名は "<METHOD> <path>" 形式で、ルートパターンではなく生のURLパスを使用するため
+// カーディナリティが高くなる点に注意してください。
+// 受信トレースコンテキストの抽出は、グローバルに設定された TextMapPropagator に依存します。
 func HTTPMiddleware(serviceName string) func(http.Handler) http.Handler {
 	tracer := otel.Tracer(serviceName)
 
@@ -65,6 +72,8 @@ func HTTPMiddleware(serviceName string) func(http.Handler) http.Handler {
 
 // StartSpan はユーティリティとして、コンテキストから新しいSpanを開始します。
 // tracerName は通常パッケージ名などを指定します。
+// グローバルの TracerProvider を使用するため、未設定の場合は no-op となります。
+// 呼び出し元は返された span の End を必ず呼び出してください。
 func StartSpan(ctx context.Context, tracerName string, spanName string) (context.Context, trace.Span) {
 	tracer := otel.Tracer(tracerName)
 	return tracer.Start(ctx, spanName)
