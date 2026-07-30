@@ -98,8 +98,13 @@ func buildSchema(t reflect.Type, baseOffset uintptr, basePath []int, s *typeSche
 }
 
 // NameOf は、ネストされた構造体も含めて探索し、
-// 指定されたフィールド変数のポインタからjsonタグを取得します。
+// 指定されたフィールド変数のポインタからjsonタグの名前部分を取得します。
 // Reflectionの結果をキャッシュ（メモ化）して高速化しています。
+//
+// 引数が不正な場合は ErrFirstArgMustBeStructPtr / ErrSecondArgMustBeFieldPtr を、
+// フィールドが見つからない場合は ErrFieldNotFound を返します（errors.Is で判定可能）。
+// フィールドは見つかったが json タグが付いていない場合は ("", nil) を返します。
+// `json:"-"` のフィールドは "-" を返し、",omitempty" 等のオプションは除去されます。
 func NameOf(rootStructPtr any, targetFieldPtr any) (string, error) {
 	// 1. ルート構造体の検証
 	vRootPtr := reflect.ValueOf(rootStructPtr)
@@ -109,8 +114,10 @@ func NameOf(rootStructPtr any, targetFieldPtr any) (string, error) {
 	vRoot := vRootPtr.Elem()
 
 	// 2. ターゲットフィールドのポインタ検証
+	// nil ポインタは実在するフィールドを指し得ないため拒否する
+	// (nil のまま Elem().Type() を呼ぶと panic するため、ここで検証する)
 	vTargetPtr := reflect.ValueOf(targetFieldPtr)
-	if vTargetPtr.Kind() != reflect.Pointer {
+	if vTargetPtr.Kind() != reflect.Pointer || vTargetPtr.IsNil() {
 		return "", ErrSecondArgMustBeFieldPtr
 	}
 	targetAddr := vTargetPtr.Pointer()
