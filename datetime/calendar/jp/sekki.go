@@ -52,34 +52,35 @@ var sekkiList = map[string]sekki{
 	"冬至": {Month: 12, DValue: 22.6587, AValue: 0.242752, YearAdjustmentValue: 0},
 }
 
-// GregorianYearTo24SekkiList は指定した西暦年の二十四節気の日付と名称のマップを返します。
-// year: 西暦年
-// 戻り値: 日付をキー、節気名を値とするマップ。エラーがあれば error を返します。
-func GregorianYearTo24SekkiList(year int) (map[time.Time]string, error) {
-	var result = make(map[time.Time]string)
+// sekkiDayOfMonth は指定した西暦年における節気 v の日を近似式で返します。
+func sekkiDayOfMonth(year int, v sekki) int {
+	y := float64((year + v.YearAdjustmentValue) - 1900)
+	return int(v.DValue+(v.AValue*y)) - int(y/4)
+}
 
-	for k, v := range sekkiList {
-		y := float64((year + v.YearAdjustmentValue) - 1900)
-		dayOfMonth := int(v.DValue+(v.AValue*y)) - int(y/4)
-		result[time.Date(year, time.Month(v.Month), dayOfMonth, 0, 0, 0, 0, time.UTC)] = k
+// GregorianYearTo24SekkiList は指定した西暦年の二十四節気の日付と名称のマップを返します。
+// キーは各節気の日の UTC 0 時の time.Time、値は節気名です。
+// 近似式による計算のため error は常に nil ですが、後方互換のため error も返します。
+func GregorianYearTo24SekkiList(year int) (map[time.Time]string, error) {
+	result := make(map[time.Time]string, len(sekkiList))
+
+	for name, v := range sekkiList {
+		result[time.Date(year, time.Month(v.Month), sekkiDayOfMonth(year, v), 0, 0, 0, 0, time.UTC)] = name
 	}
 
 	return result, nil
 }
 
-// GregorianDateToSekki は指定した日付がどの節気に該当するかを返します。
-// dt: 判定する日付
-// 戻り値: 節気名。該当しない場合は空文字列。エラーがあれば error を返します。
+// GregorianDateToSekki は指定した日付がどの節気の日（節入り日）に該当するかを返します。
+// 判定は dt の壁時計上の年月日で行い、時刻とタイムゾーンは無視します。
+// 該当しない日は空文字列を返します。近似式による計算のため error は常に nil ですが、
+// 後方互換のため error も返します。
 func GregorianDateToSekki(dt time.Time) (string, error) {
-	year := dt.Year()
-	sekkiList, err := GregorianYearTo24SekkiList(year)
-	if err != nil {
-		return "", err
-	}
+	year, month, day := dt.Date()
 
-	for date, sekki := range sekkiList {
-		if dt.Equal(date) || (dt.After(date) && dt.Before(date.AddDate(0, 0, 1))) {
-			return sekki, nil
+	for name, v := range sekkiList {
+		if int(month) == v.Month && day == sekkiDayOfMonth(year, v) {
+			return name, nil
 		}
 	}
 

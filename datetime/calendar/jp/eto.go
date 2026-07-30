@@ -2,8 +2,6 @@ package jp
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/newmo-oss/ergo"
@@ -15,63 +13,30 @@ var (
 	ErrInvalidYear = ergo.NewSentinel("年は0以上でなければなりません")
 )
 
-// jikkan は十干を表すマップです。キーは0から9の整数、値は対応する漢字です。
-var jikkan = map[int]string{
-	0: "庚",
-	1: "辛",
-	2: "壬",
-	3: "癸",
-	4: "甲",
-	5: "乙",
-	6: "丙",
-	7: "丁",
-	8: "戊",
-	9: "己",
-}
+// jikkan は十干を表す配列です。インデックスは西暦年を 10 で割った剰余に対応します
+// （例: 下 1 桁が 4 の年は「甲」）。
+var jikkan = [10]string{"庚", "辛", "壬", "癸", "甲", "乙", "丙", "丁", "戊", "己"}
 
-// junishi は十二支を表すマップです。キーは0から11の整数、値は対応する漢字です。
-var junishi = map[int]string{
-	0:  "申",
-	1:  "酉",
-	2:  "戌",
-	3:  "亥",
-	4:  "子",
-	5:  "丑",
-	6:  "寅",
-	7:  "卯",
-	8:  "辰",
-	9:  "巳",
-	10: "午",
-	11: "未",
-}
+// junishi は十二支を表す配列です。インデックスは西暦年を 12 で割った剰余に対応します
+// （例: 12 で割り切れる年は「申」）。
+var junishi = [12]string{"申", "酉", "戌", "亥", "子", "丑", "寅", "卯", "辰", "巳", "午", "未"}
 
-// monthlyAdjustmentValues は各月ごとの調整値を格納したマップです。
-// 干支日計算の補正に使用します。
-var monthlyAdjustmentValues = map[int]int{
-	1:  0,
-	2:  31,
-	3:  59,
-	4:  30,
-	5:  0,
-	6:  31,
-	7:  1,
-	8:  32,
-	9:  3,
-	10: 33,
-	11: 4,
-	12: 34,
-}
+// monthlyAdjustmentValues は干支日計算に使う月ごとの調整値です（インデックス 1〜12）。
+// 値は平年の各月 1 日までの通算日数を 60 で割った剰余です。
+var monthlyAdjustmentValues = [13]int{0, 0, 31, 59, 30, 0, 31, 1, 32, 3, 33, 4, 34}
 
-// GregorianYearToEtoYearString は西暦年を干支（十干十二支）の文字列に変換します。
-// year: 西暦年（0以上）
-// 戻り値: 干支の文字列（例: "甲子"）、またはエラー
+// GregorianYearToEtoYearString は西暦年を年干支（十干十二支）の文字列に変換します。
+// 年の区切りはグレゴリオ暦の 1 月 1 日です（立春や旧正月を区切りとする流儀とは
+// 異なります）。year が負の場合は ErrInvalidYear をラップしたエラーを返します。
+//
+// 使用例:
+//
+//	s, err := jp.GregorianYearToEtoYearString(2024) // "甲辰"
 func GregorianYearToEtoYearString(year int) (string, error) {
 	if year < 0 {
 		return "", ergo.Wrap(ErrInvalidYear, fmt.Sprintf("%d", year))
 	}
-	kan := jikkan[year%10]
-	shi := junishi[year%12]
-	return fmt.Sprintf("%s%s", kan, shi), nil
+	return jikkan[year%10] + junishi[year%12], nil
 }
 
 // GregorianDateToEtoYearString は指定した日付の年を干支（十干十二支）の文字列に変換します。
@@ -82,12 +47,16 @@ func GregorianDateToEtoYearString(dt time.Time) (string, error) {
 	return GregorianYearToEtoYearString(year)
 }
 
-// GregorianDateToEtoDayString は指定した日付を干支日（十干十二支）の文字列に変換します。
-// dt: 日付（time.Time型）
-// 戻り値: 干支日の文字列、またはエラー
+// GregorianDateToEtoDayString は指定した日付（グレゴリオ暦）を
+// 日干支（十干十二支）の文字列に変換します。日付は dt の壁時計上の年月日で
+// 解釈します。年が負の場合は ErrInvalidYear をラップしたエラーを返します。
+//
+// 使用例:
+//
+//	s, err := jp.GregorianDateToEtoDayString(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)) // "甲子"
 func GregorianDateToEtoDayString(dt time.Time) (string, error) {
 	year := dt.Year()
-	// 負の年は計算過程で負の剰余となり、マップ参照が空文字（十二支欠落）を返すため拒否する。
+	// 負の年は計算過程で負の剰余となり、十干十二支の参照が範囲外となるため拒否する。
 	// GregorianYearToEtoYearString と同じ契約に揃える。
 	if year < 0 {
 		return "", ergo.Wrap(ErrInvalidYear, fmt.Sprintf("%d", year))
@@ -95,53 +64,32 @@ func GregorianDateToEtoDayString(dt time.Time) (string, error) {
 	month := dt.Month()
 	day := dt.Day()
 
-	foo, isLeap := calculateYear(year)
+	yearVal, isLeap := calculateYear(year)
 	cc := calculateCenturyConstant(year)
-	y := foo + cc
+	y := yearVal + cc
 
 	m := monthlyAdjustmentValues[int(month)]
 	if isLeap && month <= 2 {
-		m -= 1 // 閏年の2月までの調整
+		m -= 1 // 年定数は 3 月以降に合わせてあるため、閏年の 1〜2 月は 1 日戻す
 	}
 	dayOfYear := y + m + day
 
-	kan := jikkan[dayOfYear%10]
-	shi := junishi[dayOfYear%12]
-
-	return fmt.Sprintf("%s%s", kan, shi), nil
+	return jikkan[dayOfYear%10] + junishi[dayOfYear%12], nil
 }
 
-// calculateYear は西暦年から干支日計算用の値と閏年判定を返します。
-// year: 西暦年
-// 戻り値: 計算値、閏年かどうかの真偽値
+// calculateYear は西暦年の下 2 桁から日干支計算用の年内定数と、
+// その年がグレゴリオ暦の閏年かどうかを返します。
+// 年内定数は y を下 2 桁として 5y + y/4 (整数除算) です。
 func calculateYear(year int) (int, bool) {
-	isLeapYear := false
-
 	yearMod100 := year % 100
 	if yearMod100 == 0 {
-		if year%400 == 0 {
-			return 0, true
-		}
-		return 0, false
+		return 0, year%400 == 0
 	}
-	baseVal := (yearMod100 * 10) / 2
-	adjustment := baseVal / 10
-	etoVal := baseVal + (adjustment / 2)
-
-	isLeapYear = !strings.HasSuffix(strconv.Itoa(baseVal), "5") && (adjustment%2 == 0)
-
-	return etoVal, isLeapYear
+	return 5*yearMod100 + yearMod100/4, yearMod100%4 == 0
 }
 
-// calculateCenturyConstant は西暦年から世紀定数を計算して返します。
-// year: 西暦年
-// 戻り値: 世紀定数
+// calculateCenturyConstant は西暦年の世紀部分から日干支計算用の定数を返します。
 func calculateCenturyConstant(year int) int {
-
-	y := year / 100
-	z := y / 4
-	b := ((y * 44) + z + 13) % 60
-
-	return b
-
+	c := year / 100
+	return ((c * 44) + c/4 + 13) % 60
 }
