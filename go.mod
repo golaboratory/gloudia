@@ -19,7 +19,7 @@ require (
 	github.com/newmo-oss/ergo v0.1.2
 	github.com/pquerna/otp v1.5.0
 	github.com/redis/go-redis/v9 v9.18.0
-	github.com/sashabaranov/go-openai v1.41.2
+	github.com/sashabaranov/go-openai v1.42.0
 	github.com/stretchr/testify v1.11.1
 	github.com/xuri/excelize/v2 v2.10.1
 	go.opentelemetry.io/otel v1.42.0
